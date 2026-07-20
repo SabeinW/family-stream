@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
@@ -74,7 +74,17 @@ export default function Watch() {
                 </button>
                 <h3 className="font-semibold text-sm md:text-base truncate">{media.title}</h3>
               </div>
-              {media.ownerId === user?.id && <DeleteMediaButton mediaId={media.id} onDeleted={() => navigate('/')} />}
+              <div className="flex items-center gap-1">
+                <a
+                  href={api.downloadUrl(media.id)}
+                  download
+                  aria-label="Download"
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                </a>
+                {media.ownerId === user?.id && <DeleteMediaButton mediaId={media.id} onDeleted={() => navigate('/')} />}
+              </div>
             </div>
             <img src={api.photoUrl(media.id)} alt={media.title} className="max-h-screen max-w-full object-contain mx-auto" />
           </>

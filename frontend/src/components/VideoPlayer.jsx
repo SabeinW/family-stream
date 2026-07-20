@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, Volume2, VolumeX, RotateCcw, RotateCw,
-  Maximize, Minimize, ArrowLeft, Settings, X,
+  Maximize, Minimize, ArrowLeft, Settings, X, Download,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -207,6 +207,14 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwn
                 <h3 className="font-semibold text-sm md:text-base truncate">{media.title}</h3>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={api.downloadUrl(media.id)}
+                  download
+                  aria-label="Download"
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                </a>
                 {isOwner && <DeleteMediaButton mediaId={media.id} onDeleted={onDeleted} />}
                 {theater && (
                   <button

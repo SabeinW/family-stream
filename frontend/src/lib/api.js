@@ -86,4 +86,7 @@ export const api = {
   },
   photoUrl: (id) => `${BASE}/stream/photo/${id}?profileToken=${encodeURIComponent(localStorage.getItem('fs_profile_token') || '')}`,
   thumbnailUrl: (id) => `${BASE}/stream/thumbnail/${id}?profileToken=${encodeURIComponent(localStorage.getItem('fs_profile_token') || '')}`,
+  downloadUrl: (id) => `${BASE}/stream/download/${id}?profileToken=${encodeURIComponent(localStorage.getItem('fs_profile_token') || '')}`,
+
+  storageUsage: () => request('/storage/usage'),
 };

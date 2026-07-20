@@ -81,6 +81,24 @@ router.get('/photo/:id', requireProfile, async (req, res) => {
   res.sendFile(filePath);
 });
 
+// GET /api/stream/download/:id — original-quality file (pre-transcode for
+// videos, full-resolution for photos), forced as a browser download via
+// Content-Disposition rather than inline playback/display. Available to
+// anyone with view access, not just the owner — sharing a memory should
+// mean the people it's shared with can actually keep a copy of it too.
+router.get('/download/:id', requireProfile, async (req, res) => {
+  const media = await prisma.media.findUnique({ where: { id: req.params.id } });
+  if (!media || !(await canAccessMedia(req.profile.userId, media))) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
+  const filePath = path.join(ORIGINALS, media.originalPath);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File missing on disk.' });
+
+  const ext = path.extname(media.originalPath);
+  const safeName = media.title.replace(/[^a-z0-9 _.-]/gi, '_').trim() || 'download';
+  res.download(filePath, `${safeName}${ext}`);
+});
+
 // GET /api/stream/thumbnail/:id — lightweight JPEG for cards/carousels.
 // Uses the profile token like the other stream routes (the frontend already
 // sends one via ?profileToken= for <img> tags), so thumbnails respect the

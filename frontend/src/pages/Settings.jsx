@@ -6,6 +6,13 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../lib/api';
 
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
 export default function Settings() {
   const { themeId, setTheme, themes } = useTheme();
   const { profile, updateProfile } = useAuth();
@@ -21,11 +28,14 @@ export default function Settings() {
   const [usernameError, setUsernameError] = useState('');
   const [usernameSaved, setUsernameSaved] = useState(false);
 
+  const [usage, setUsage] = useState(null);
+
   useEffect(() => {
     api.me().then((me) => {
       setCurrentUsername(me.username);
       setUsername(me.username || '');
     });
+    api.storageUsage().then(setUsage);
   }, []);
 
   const saveUsername = async (e) => {
@@ -152,6 +162,50 @@ export default function Settings() {
           </form>
         </div>
         {error && <p className="text-accent text-sm mb-4">{error}</p>}
+
+        <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4 mt-10">Storage</h2>
+        {!usage ? (
+          <Loader2 className="w-4 h-4 animate-spin text-white/40" />
+        ) : (
+          <div className="bg-base-800 rounded-xl p-4 ring-1 ring-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-white/70">Your uploads</p>
+              <p className="text-sm font-semibold">{formatBytes(usage.totalBytes)}</p>
+            </div>
+            {usage.totalBytes > 0 && (
+              <div className="h-2 rounded-full bg-base-700 overflow-hidden flex mb-2">
+                <div className="h-full bg-accent" style={{ width: `${(usage.videoBytes / usage.totalBytes) * 100}%` }} />
+                <div className="h-full bg-accent-glow" style={{ width: `${(usage.photoBytes / usage.totalBytes) * 100}%` }} />
+              </div>
+            )}
+            <div className="flex items-center gap-4 text-xs text-white/50 mb-3">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-accent shrink-0" /> Videos — {formatBytes(usage.videoBytes)}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-accent-glow shrink-0" /> Photos — {formatBytes(usage.photoBytes)}
+              </span>
+            </div>
+            <p className="text-xs text-white/40">{usage.itemCount} {usage.itemCount === 1 ? 'item' : 'items'}</p>
+
+            {usage.disk && (
+              <div className="border-t border-white/10 mt-3 pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-white/50">Server disk</p>
+                  <p className="text-xs text-white/50">
+                    {formatBytes(usage.disk.totalBytes - usage.disk.freeBytes)} of {formatBytes(usage.disk.totalBytes)} used
+                  </p>
+                </div>
+                <div className="h-1.5 rounded-full bg-base-700 overflow-hidden">
+                  <div
+                    className="h-full bg-white/40"
+                    style={{ width: `${((usage.disk.totalBytes - usage.disk.freeBytes) / usage.disk.totalBytes) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4 mt-10">Appearance</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
