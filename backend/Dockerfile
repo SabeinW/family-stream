@@ -29,4 +29,15 @@ EXPOSE 4000
 # backfill any Media rows missing an owner (idempotent, no-op once caught
 # up), then start the API. Switch to `prisma migrate deploy` once you've run
 # `npx prisma migrate dev` locally and committed a prisma/migrations folder.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node src/scripts/backfillOwners.js && node src/server.js"]
+#
+# --accept-data-loss: there's no TTY in a container to answer Prisma's
+# interactive confirmation, so without this flag `db push` hard-fails (and
+# the container restart-loops) on *any* schema change it flags as
+# potentially destructive -- including safe ones, like adding a new unique
+# constraint to a column with no data yet. This trades away a safety net:
+# a schema change that legitimately could drop data (e.g. narrowing a
+# column, dropping one with real rows in it) will now also proceed
+# silently instead of stopping for confirmation. Test schema changes
+# locally first and back up the SQLite file before deploying one, same as
+# already documented in this project's deploy notes.
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node src/scripts/backfillOwners.js && node src/server.js"]
