@@ -1,0 +1,51 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env before starting}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:8080}
+      PORT: 4000
+    volumes:
+      - media_uploads:/app/src/uploads
+      - db_data:/app/data
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "80"
+
+  # Reverse proxy with automatic HTTPS (Let's Encrypt) for real-domain / VPS
+  # deploys. For pure localhost testing you can ignore this and hit the
+  # frontend container directly — see docker-compose.local.yml.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  media_uploads:   # original + transcoded video/photo files
+  db_data:         # SQLite database file
+  caddy_data:      # Let's Encrypt certs
+  caddy_config:

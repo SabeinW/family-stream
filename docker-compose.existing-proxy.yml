@@ -1,0 +1,17 @@
+# Use this when nginx/Apache/another reverse proxy is ALREADY running on the
+# host (e.g. an existing IONOS VPS serving other sites/apps) and will handle
+# TLS + the public domain itself. This skips the caddy container entirely and
+# just exposes the app on a plain HTTP port on localhost for your existing
+# web server to proxy_pass / ProxyPass to.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.existing-proxy.yml up -d --build
+#
+# Then add a vhost on your existing nginx/Apache pointing at
+# http://127.0.0.1:${HOST_PORT:-8081} — see README for ready-to-paste configs.
+services:
+  frontend:
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8081}:80"   # bound to localhost only — never exposed directly to the internet
+
+  caddy:
+    profiles: ["donotstart"]

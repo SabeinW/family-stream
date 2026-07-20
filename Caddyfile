@@ -1,0 +1,8 @@
+{$DOMAIN} {
+    reverse_proxy frontend:80
+
+    # Match nginx's upload/streaming tuning at the edge too.
+    request_body {
+        max_size 5120MB
+    }
+}

@@ -1,0 +1,10 @@
+# For local testing without a domain/HTTPS:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+# This exposes the frontend directly on HOST_PORT and skips the caddy service.
+services:
+  frontend:
+    ports:
+      - "${HOST_PORT:-8080}:80"
+
+  caddy:
+    profiles: ["donotstart"]  # effectively disables this service for local runs

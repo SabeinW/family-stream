@@ -1,0 +1,91 @@
+// Prisma schema for FamilyStream
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  profiles     Profile[]
+}
+
+model Profile {
+  id          String     @id @default(uuid())
+  name        String
+  avatarColor String     @default("#E50914")
+  isKid       Boolean    @default(false)
+  pinHash     String?    // optional PIN for kid/locked profiles
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  favorites   Favorite[]
+  progress    WatchProgress[]
+  createdAt   DateTime   @default(now())
+}
+
+model Media {
+  id             String     @id @default(uuid())
+  title          String
+  description    String?
+  type           String     // "video" | "photo"
+  category       String     @default("Uncategorized") // e.g. "Vacations", "Memories"
+  tags           String     @default("") // comma-separated
+  originalPath   String
+  streamPath     String?    // default/highest-quality rendition filename (videos only)
+  thumbnailPath  String?
+  durationSec    Int?
+  width          Int?
+  height         Int?
+  status         String     @default("processing") // processing | ready | failed
+  uploadedBy     String?
+  takenAt        DateTime?  // capture date, for "Memories from 1 year ago"
+  createdAt      DateTime   @default(now())
+  favorites      Favorite[]
+  progress       WatchProgress[]
+  renditions     VideoRendition[]
+}
+
+// One row per encoded quality level (adaptive-quality selector on the frontend).
+model VideoRendition {
+  id        String   @id @default(uuid())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  quality   String   // "1080p" | "720p" | "480p"
+  path      String   // filename within uploads/transcoded
+  bitrate   Int?      // kbps, informational
+  height    Int
+  createdAt DateTime @default(now())
+
+  @@unique([mediaId, quality])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  createdAt DateTime @default(now())
+
+  @@unique([profileId, mediaId])
+}
+
+model WatchProgress {
+  id           String   @id @default(uuid())
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profileId    String
+  media        Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId      String
+  positionSec  Float    @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([profileId, mediaId])
+}

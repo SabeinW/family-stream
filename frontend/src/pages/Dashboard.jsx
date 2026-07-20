@@ -1,0 +1,88 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import Navbar from '../components/Navbar.jsx';
+import Hero from '../components/Hero.jsx';
+import Carousel from '../components/Carousel.jsx';
+import { api } from '../lib/api';
+
+function oneYearAgoRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate() - 3);
+  const end = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate() + 3);
+  return [start, end];
+}
+
+export default function Dashboard() {
+  const [media, setMedia] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [spotlight, setSpotlight] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([api.listMedia(), api.favorites().catch(() => [])]).then(([all, favs]) => {
+      setMedia(all);
+      setFavorites(favs);
+      if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
+      setLoading(false);
+    });
+  }, []);
+
+  const recent = useMemo(() => [...media].slice(0, 20), [media]);
+  const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
+  const photos = useMemo(() => media.filter((m) => m.type === 'photo'), [media]);
+  const vacations = useMemo(() => media.filter((m) => /vacation/i.test(m.category)), [media]);
+
+  const memoriesAYearAgo = useMemo(() => {
+    const [start, end] = oneYearAgoRange();
+    return media.filter((m) => m.takenAt && new Date(m.takenAt) >= start && new Date(m.takenAt) <= end);
+  }, [media]);
+
+  const categorized = useMemo(() => {
+    const map = {};
+    media.forEach((m) => {
+      if (!map[m.category]) map[m.category] = [];
+      map[m.category].push(m);
+    });
+    return map;
+  }, [media]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-base-950 flex items-center justify-center">
+        <div className="w-16 h-16 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!media.length) {
+    return (
+      <div className="min-h-screen bg-base-950">
+        <Navbar />
+        <div className="pt-32 text-center text-white/60 px-4">
+          <p className="text-lg">No media yet — upload your first family memory to get started.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-base-950 pb-20">
+      <Navbar />
+      <Hero media={spotlight} />
+
+      <div className="-mt-24 relative z-10">
+        <Carousel title="Trending Family Moments" items={recent} />
+        {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
+        {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}
+        <Carousel title="Recent Videos" items={videos.slice(0, 20)} />
+        {vacations.length > 0 && <Carousel title="Vacations" items={vacations} size="lg" />}
+        <Carousel title="Photo Highlights" items={photos.slice(0, 20)} size="sm" />
+
+        {Object.entries(categorized)
+          .filter(([cat]) => !['Uncategorized', 'Vacations'].includes(cat))
+          .map(([cat, items]) => (
+            <Carousel key={cat} title={cat} items={items} />
+          ))}
+      </div>
+    </div>
+  );
+}
