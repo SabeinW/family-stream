@@ -14,6 +14,7 @@ model User {
   id           String    @id @default(uuid())
   email        String    @unique
   username     String?   @unique // optional, lowercase-normalized; lets friends be added without knowing an email
+  phone        String?   @unique // optional, digits-only normalized; self-reported and NOT verified via SMS — same trust level as username, just another lookup key
   passwordHash String
   createdAt    DateTime  @default(now())
   profiles     Profile[]
@@ -21,6 +22,7 @@ model User {
   mediaShares  MediaShare[]
   playlists      Playlist[]
   playlistShares PlaylistShare[]
+  notifications  Notification[]
 
   friendRequestsSent     Friendship[] @relation("Requester")
   friendRequestsReceived Friendship[] @relation("Addressee")
@@ -184,4 +186,21 @@ model PlaylistShare {
 
   @@unique([playlistId, userId])
   @@index([userId])
+}
+
+// Pre-rendered (not i18n'd — this app has no localization) notifications:
+// friend requests/accepts, specific-people shares, and new items added to a
+// playlist already shared with the recipient.
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String   // friend_request | friend_accept | media_shared | playlist_shared | playlist_item_added
+  message   String
+  link      String?  // relative path the frontend navigates to on click
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
 }

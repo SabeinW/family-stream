@@ -32,6 +32,7 @@ export const api = {
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => request('/auth/me'),
   setUsername: (username) => request('/auth/username', { method: 'PATCH', body: JSON.stringify({ username }) }),
+  setPhone: (phone) => request('/auth/phone', { method: 'PATCH', body: JSON.stringify({ phone }) }),
 
   listProfiles: () => request('/profiles'),
   createProfile: (data) => request('/profiles', { method: 'POST', body: JSON.stringify(data) }),
@@ -56,6 +57,15 @@ export const api = {
   acceptFriend: (id) => request(`/friends/${id}/accept`, { method: 'POST' }),
   declineFriend: (id) => request(`/friends/${id}/decline`, { method: 'POST' }),
   removeFriend: (id) => request(`/friends/${id}`, { method: 'DELETE' }),
+  friendAvatarUrl: (userId, version) => {
+    const params = new URLSearchParams({ token: localStorage.getItem('fs_token') || '' });
+    if (version) params.set('v', version);
+    return `${BASE}/friends/${userId}/avatar?${params.toString()}`;
+  },
+
+  listNotifications: () => request('/notifications'),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'POST' }),
 
   listMedia: (params = {}) => {
     const qs = new URLSearchParams(params).toString();

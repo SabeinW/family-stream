@@ -1,45 +1,64 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { UploadCloud, CheckCircle2, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, Loader2, X, AlertCircle } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { api } from '../lib/api';
 
 export default function Upload() {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]); // [{ file, status: 'pending'|'uploading'|'done'|'error', error? }]
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState('private');
-  const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [dragOver, setDragOver] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const addFiles = (fileList) => {
+    const incoming = [...fileList].map((file) => ({ file, status: 'pending' }));
+    setFiles((prev) => [...prev, ...incoming]);
+  };
+
+  const removeFile = (i) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!file) return;
-    setStatus('uploading');
-    const form = new FormData();
-    form.append('file', file);
-    form.append('title', title || file.name);
-    form.append('category', category || 'Uncategorized');
-    form.append('tags', tags);
-    form.append('visibility', visibility);
-    try {
-      await api.upload(form);
-      setStatus('done');
-      setFile(null);
-      setTitle('');
-      setCategory('');
-      setTags('');
-    } catch (err) {
-      setStatus('error');
+    if (!files.length || submitting) return;
+    setSubmitting(true);
+
+    // Sequential, not parallel — a VPS shouldn't get hit with several large
+    // video uploads (each kicking off ffmpeg transcoding) all at once.
+    for (let i = 0; i < files.length; i++) {
+      setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' } : f)));
+      const { file } = files[i];
+      const form = new FormData();
+      form.append('file', file);
+      form.append('title', files.length === 1 && title ? title : file.name);
+      form.append('category', category || 'Uncategorized');
+      form.append('tags', tags);
+      form.append('visibility', visibility);
+      try {
+        await api.upload(form);
+        setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'done' } : f)));
+      } catch (err) {
+        setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'error', error: err.message } : f)));
+      }
     }
+    setSubmitting(false);
+  };
+
+  const allDone = files.length > 0 && files.every((f) => f.status === 'done');
+  const reset = () => {
+    setFiles([]);
+    setTitle('');
+    setCategory('');
+    setTags('');
   };
 
   return (
     <div className="min-h-screen bg-base-950 pb-20">
       <Navbar />
       <div className="pt-28 px-4 max-w-lg mx-auto">
-        <h1 className="text-2xl font-semibold mb-6">Add a family memory</h1>
+        <h1 className="text-2xl font-semibold mb-6">Add family memories</h1>
 
         <form onSubmit={submit} className="space-y-4">
           <div
@@ -48,33 +67,55 @@ export default function Upload() {
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) setFile(f);
+              if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
             }}
-            className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
               dragOver ? 'border-accent bg-accent/5' : 'border-white/20'
             }`}
           >
             <UploadCloud className="w-10 h-10 mx-auto mb-3 text-white/50" />
-            <p className="text-white/70 mb-2">{file ? file.name : 'Drag & drop a photo or video, or browse'}</p>
+            <p className="text-white/70 mb-2">
+              {files.length ? `${files.length} file${files.length === 1 ? '' : 's'} selected` : 'Drag & drop photos or videos, or browse'}
+            </p>
             <input
               type="file"
               accept="video/*,image/*"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              multiple
+              onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }}
               className="hidden"
               id="file-input"
             />
             <label htmlFor="file-input" className="inline-block mt-1 text-accent hover:underline cursor-pointer text-sm">
-              Choose file
+              Choose files
             </label>
           </div>
 
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            className="w-full bg-base-800 rounded-md px-4 py-3 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
-          />
+          {files.length > 0 && (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hidden">
+              {files.map((f, i) => (
+                <div key={i} className="flex items-center justify-between bg-base-800 rounded-md px-3 py-2 text-sm">
+                  <span className="truncate flex-1 mr-2">{f.file.name}</span>
+                  {f.status === 'pending' && (
+                    <button type="button" onClick={() => removeFile(i)} aria-label="Remove" className="p-0.5 hover:text-accent">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  {f.status === 'uploading' && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
+                  {f.status === 'done' && <CheckCircle2 className="w-4 h-4 text-accent" />}
+                  {f.status === 'error' && <AlertCircle className="w-4 h-4 text-accent" aria-label={f.error} />}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {files.length === 1 && (
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full bg-base-800 rounded-md px-4 py-3 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
+            />
+          )}
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -96,26 +137,35 @@ export default function Upload() {
             <option value="friends">Shared with friends</option>
           </select>
           <p className="text-white/40 text-xs -mt-2">
-            You can fine-tune sharing (including specific friends) anytime from a memory's Details view.
+            {files.length > 1 ? 'Category, tags, and sharing apply to all selected files. ' : ''}
+            You can fine-tune sharing (including specific friends) anytime after uploading.
           </p>
 
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            type="submit"
-            disabled={!file || status === 'uploading'}
-            className="w-full bg-accent hover:bg-accent-dim transition-colors rounded-md py-3 font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {status === 'uploading' && <Loader2 className="w-4 h-4 animate-spin" />}
-            {status === 'done' && <CheckCircle2 className="w-4 h-4" />}
-            {status === 'uploading' ? 'Uploading…' : status === 'done' ? 'Uploaded!' : 'Upload'}
-          </motion.button>
+          {!allDone ? (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              type="submit"
+              disabled={!files.length || submitting}
+              className="w-full bg-accent hover:bg-accent-dim transition-colors rounded-md py-3 font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitting ? 'Uploading…' : `Upload ${files.length || ''}`.trim()}
+            </motion.button>
+          ) : (
+            <button
+              type="button"
+              onClick={reset}
+              className="w-full bg-white/10 hover:bg-white/20 transition-colors rounded-md py-3 font-semibold"
+            >
+              Upload more
+            </button>
+          )}
 
-          {status === 'done' && (
+          {allDone && (
             <p className="text-white/50 text-sm text-center">
-              Videos are transcoded for streaming in the background — they'll appear once ready.
+              Uploaded! Videos are transcoded for streaming in the background — they'll appear once ready.
             </p>
           )}
-          {status === 'error' && <p className="text-accent text-sm text-center">Upload failed. Please try again.</p>}
         </form>
       </div>
     </div>

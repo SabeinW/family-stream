@@ -9,6 +9,7 @@ const {
   canAccessPlaylist,
   VALID_VISIBILITIES,
 } = require('../utils/access');
+const { notify } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -115,6 +116,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (coverColor !== undefined) data.coverColor = coverColor;
 
   let targetUserIds = null;
+  let previouslySharedWith = new Set();
   if (visibility !== undefined) {
     if (!VALID_VISIBILITIES.includes(visibility)) {
       return res.status(400).json({ error: 'Invalid visibility value.' });
@@ -127,6 +129,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'Can only share with current friends.' });
       }
       targetUserIds = requested;
+      const previousShares = await prisma.playlistShare.findMany({ where: { playlistId: playlist.id }, select: { userId: true } });
+      previouslySharedWith = new Set(previousShares.map((s) => s.userId));
     } else {
       targetUserIds = [];
     }
@@ -143,6 +147,14 @@ router.patch('/:id', requireAuth, async (req, res) => {
         ]
       : []),
   ]);
+
+  if (targetUserIds) {
+    for (const userId of targetUserIds) {
+      if (!previouslySharedWith.has(userId)) {
+        notify(userId, 'playlist_shared', `${req.user.email} shared the playlist "${playlist.name}" with you.`, `/playlists/${playlist.id}`);
+      }
+    }
+  }
 
   const updated = await prisma.playlist.findUnique({
     where: { id: playlist.id },
@@ -177,6 +189,21 @@ router.post('/:id/items', requireAuth, async (req, res) => {
     create: { playlistId: playlist.id, mediaId },
   });
   res.status(201).json(item);
+
+  // Let people who already have this playlist notice new items land in it —
+  // not a share event, so no "shared with you" duplicate for people who
+  // already had access.
+  if (playlist.visibility === 'friends') {
+    const friendIds = await getFriendIds(me);
+    for (const userId of friendIds) {
+      notify(userId, 'playlist_item_added', `${req.user.email} added "${media.title}" to "${playlist.name}".`, `/playlists/${playlist.id}`);
+    }
+  } else if (playlist.visibility === 'custom') {
+    const shares = await prisma.playlistShare.findMany({ where: { playlistId: playlist.id }, select: { userId: true } });
+    for (const { userId } of shares) {
+      notify(userId, 'playlist_item_added', `${req.user.email} added "${media.title}" to "${playlist.name}".`, `/playlists/${playlist.id}`);
+    }
+  }
 });
 
 router.delete('/:id/items/:mediaId', requireAuth, async (req, res) => {

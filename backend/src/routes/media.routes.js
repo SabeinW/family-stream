@@ -7,6 +7,7 @@ const prisma = require('../utils/prisma');
 const { requireAuth, requireProfile } = require('../middleware/auth');
 const { transcodeLadder, probe, generateThumbnail } = require('../utils/ffmpeg');
 const { getFriendIds, mediaAccessWhere, canAccessMedia, VALID_VISIBILITIES } = require('../utils/access');
+const { notify } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -206,6 +207,9 @@ router.patch('/:id/visibility', requireAuth, async (req, res) => {
     targetUserIds = requested;
   }
 
+  const previousShares = await prisma.mediaShare.findMany({ where: { mediaId: media.id }, select: { userId: true } });
+  const previouslySharedWith = new Set(previousShares.map((s) => s.userId));
+
   // Always clear existing shares first, on every transition (not just when
   // landing on "custom"), so custom -> private -> custom can't resurrect
   // stale grants from before the visibility was changed away and back.
@@ -216,6 +220,14 @@ router.patch('/:id/visibility', requireAuth, async (req, res) => {
       ? [prisma.mediaShare.createMany({ data: targetUserIds.map((userId) => ({ mediaId: media.id, userId })) })]
       : []),
   ]);
+
+  // Only notify people newly added to the share list, not on every re-save
+  // of an unchanged list.
+  for (const userId of targetUserIds) {
+    if (!previouslySharedWith.has(userId)) {
+      notify(userId, 'media_shared', `${req.user.email} shared "${media.title}" with you.`, `/watch/${media.id}`);
+    }
+  }
 
   const updated = await prisma.media.findUnique({
     where: { id: media.id },

@@ -84,34 +84,40 @@ function LibraryTab({ playlistId, existingIds, onAdded }) {
 }
 
 function UploadTab({ playlistId, onAdded }) {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]); // [{ file, status: 'pending'|'uploading'|'done'|'error' }]
   const [title, setTitle] = useState('');
   const [visibility, setVisibility] = useState('private');
-  const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const addFiles = (fileList) => setFiles((prev) => [...prev, ...[...fileList].map((file) => ({ file, status: 'pending' }))]);
+  const removeFile = (i) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!file) return;
-    setStatus('uploading');
-    setError('');
-    const form = new FormData();
-    form.append('file', file);
-    form.append('title', title || file.name);
-    form.append('visibility', visibility);
-    try {
-      const { media } = await api.upload(form);
-      await api.addPlaylistItem(playlistId, media.id);
-      setStatus('done');
-      setFile(null);
-      setTitle('');
-      onAdded();
-    } catch (err) {
-      setError(err.message);
-      setStatus('error');
+    if (!files.length || submitting) return;
+    setSubmitting(true);
+
+    for (let i = 0; i < files.length; i++) {
+      setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' } : f)));
+      const { file } = files[i];
+      const form = new FormData();
+      form.append('file', file);
+      form.append('title', files.length === 1 && title ? title : file.name);
+      form.append('visibility', visibility);
+      try {
+        const { media } = await api.upload(form);
+        await api.addPlaylistItem(playlistId, media.id);
+        setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'done' } : f)));
+      } catch (err) {
+        setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, status: 'error', error: err.message } : f)));
+      }
     }
+    setSubmitting(false);
+    onAdded();
   };
+
+  const allDone = files.length > 0 && files.every((f) => f.status === 'done');
 
   return (
     <form onSubmit={submit} className="space-y-3">
@@ -121,33 +127,55 @@ function UploadTab({ playlistId, onAdded }) {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) setFile(f);
+          if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
         }}
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
           dragOver ? 'border-accent bg-accent/5' : 'border-white/20'
         }`}
       >
         <UploadCloud className="w-8 h-8 mx-auto mb-2 text-white/50" />
-        <p className="text-white/70 mb-2 text-sm">{file ? file.name : 'Drag & drop a photo or video, or browse'}</p>
+        <p className="text-white/70 mb-2 text-sm">
+          {files.length ? `${files.length} file${files.length === 1 ? '' : 's'} selected` : 'Drag & drop photos or videos, or browse'}
+        </p>
         <input
           type="file"
           accept="video/*,image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          multiple
+          onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }}
           className="hidden"
           id="playlist-upload-input"
         />
         <label htmlFor="playlist-upload-input" className="inline-block text-accent hover:underline cursor-pointer text-sm">
-          Choose file
+          Choose files
         </label>
       </div>
 
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title (optional)"
-        className="w-full bg-base-800 rounded-md px-4 py-2.5 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
-      />
+      {files.length > 0 && (
+        <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hidden">
+          {files.map((f, i) => (
+            <div key={i} className="flex items-center justify-between bg-base-800 rounded-md px-3 py-2 text-sm">
+              <span className="truncate flex-1 mr-2">{f.file.name}</span>
+              {f.status === 'pending' && (
+                <button type="button" onClick={() => removeFile(i)} aria-label="Remove" className="p-0.5 hover:text-accent">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {f.status === 'uploading' && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
+              {f.status === 'done' && <Check className="w-4 h-4 text-accent" />}
+              {f.status === 'error' && <span className="text-accent text-xs">{f.error || 'Failed'}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {files.length === 1 && (
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="w-full bg-base-800 rounded-md px-4 py-2.5 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
+        />
+      )}
       <select
         value={visibility}
         onChange={(e) => setVisibility(e.target.value)}
@@ -159,18 +187,17 @@ function UploadTab({ playlistId, onAdded }) {
 
       <button
         type="submit"
-        disabled={!file || status === 'uploading'}
+        disabled={!files.length || submitting || allDone}
         className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-dim transition-colors rounded-md py-2.5 text-sm font-semibold disabled:opacity-50"
       >
-        {status === 'uploading' && <Loader2 className="w-4 h-4 animate-spin" />}
-        {status === 'uploading' ? 'Uploading…' : 'Upload & add to playlist'}
+        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+        {submitting ? 'Uploading…' : allDone ? 'Added!' : 'Upload & add to playlist'}
       </button>
-      {status === 'done' && (
+      {allDone && (
         <p className="text-white/50 text-xs text-center">
-          Added! Videos finish processing in the background and will appear once ready.
+          Videos finish processing in the background and will appear once ready.
         </p>
       )}
-      {error && <p className="text-accent text-sm text-center">{error}</p>}
     </form>
   );
 }

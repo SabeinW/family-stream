@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
 const { requireAuth } = require('../middleware/auth');
+const { normalizePhone, isValidPhone } = require('../utils/phone');
 
 const router = express.Router();
 const TOKEN_TTL = '30d';
@@ -69,7 +70,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
-    select: { id: true, email: true, username: true },
+    select: { id: true, email: true, username: true, phone: true },
   });
   if (!user) return res.status(404).json({ error: 'Account not found.' });
   res.json(user);
@@ -91,7 +92,29 @@ router.patch('/username', requireAuth, async (req, res) => {
   const user = await prisma.user.update({
     where: { id: req.user.userId },
     data: { username },
-    select: { id: true, email: true, username: true },
+    select: { id: true, email: true, username: true, phone: true },
+  });
+  res.json(user);
+});
+
+// Phone numbers here are self-reported and NOT verified via SMS (no SMS
+// provider is wired up) — this is purely a lookup convenience with the same
+// trust level as username, not a verified contact method.
+router.patch('/phone', requireAuth, async (req, res) => {
+  const normalized = normalizePhone(req.body.phone);
+  if (!isValidPhone(normalized)) {
+    return res.status(400).json({ error: 'Enter a valid phone number (7-15 digits).' });
+  }
+
+  const existing = await prisma.user.findUnique({ where: { phone: normalized } });
+  if (existing && existing.id !== req.user.userId) {
+    return res.status(409).json({ error: 'That phone number is already in use.' });
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user.userId },
+    data: { phone: normalized },
+    select: { id: true, email: true, username: true, phone: true },
   });
   res.json(user);
 });

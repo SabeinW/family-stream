@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Share2, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import DeleteMediaButton from '../components/DeleteMediaButton.jsx';
+import ShareControl from '../components/ShareControl.jsx';
 
 export default function Watch() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function Watch() {
   const { user } = useAuth();
   const [media, setMedia] = useState(null);
   const [theater, setTheater] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   useEffect(() => {
     api.getMedia(id).then(setMedia);
@@ -64,6 +66,7 @@ export default function Watch() {
             onTheaterChange={handleTheaterChange}
             isOwner={media.ownerId === user?.id}
             onDeleted={() => navigate('/')}
+            onShareClick={() => setShowShare(true)}
           />
         ) : (
           <>
@@ -83,13 +86,53 @@ export default function Watch() {
                 >
                   <Download className="w-5 h-5" />
                 </a>
-                {media.ownerId === user?.id && <DeleteMediaButton mediaId={media.id} onDeleted={() => navigate('/')} />}
+                {media.ownerId === user?.id && (
+                  <>
+                    <button
+                      onClick={() => setShowShare(true)}
+                      aria-label="Share"
+                      className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                      <Share2 className="w-5 h-5" />
+                    </button>
+                    <DeleteMediaButton mediaId={media.id} onDeleted={() => navigate('/')} />
+                  </>
+                )}
               </div>
             </div>
             <img src={api.photoUrl(media.id)} alt={media.title} className="max-h-screen max-w-full object-contain mx-auto" />
           </>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {showShare && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            onClick={() => setShowShare(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              className="relative w-full max-w-sm bg-base-900 rounded-xl ring-1 ring-white/10 shadow-card p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowShare(false)}
+                aria-label="Close"
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <ShareControl mediaId={media.id} isOwner={media.ownerId === user?.id} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

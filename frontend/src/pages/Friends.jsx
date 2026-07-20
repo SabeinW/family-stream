@@ -4,13 +4,20 @@ import { UserPlus, Check, X, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { api } from '../lib/api';
 
-function Row({ email, username, action }) {
+function Row({ userId, email, username, avatarColor, avatarPath, action }) {
   const label = username ? `@${username}` : email;
   return (
     <div className="flex items-center justify-between bg-base-800 rounded-lg px-4 py-3 ring-1 ring-white/10">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="w-9 h-9 rounded-full bg-accent/20 text-accent flex items-center justify-center font-semibold shrink-0">
-          {(username || email)[0]?.toUpperCase()}
+        <span
+          className="w-9 h-9 rounded-full flex items-center justify-center font-semibold shrink-0 overflow-hidden"
+          style={{ backgroundColor: avatarPath ? undefined : avatarColor || 'rgb(var(--accent-rgb) / 0.2)' }}
+        >
+          {avatarPath ? (
+            <img src={api.friendAvatarUrl(userId, avatarPath)} alt="" className="w-full h-full object-cover" />
+          ) : (
+            (username || email)[0]?.toUpperCase()
+          )}
         </span>
         <div className="min-w-0">
           <p className="truncate">{label}</p>
@@ -102,8 +109,11 @@ export default function Friends() {
               {data.incoming.map((f) => (
                 <Row
                   key={f.friendshipId}
+                  userId={f.userId}
                   email={f.email}
                   username={f.username}
+                  avatarColor={f.avatarColor}
+                  avatarPath={f.avatarPath}
                   action={
                     <>
                       <button
@@ -137,8 +147,11 @@ export default function Friends() {
               {data.outgoing.map((f) => (
                 <Row
                   key={f.friendshipId}
+                  userId={f.userId}
                   email={f.email}
                   username={f.username}
+                  avatarColor={f.avatarColor}
+                  avatarPath={f.avatarPath}
                   action={
                     <button
                       onClick={() => withBusy(f.friendshipId, () => api.removeFriend(f.friendshipId))}
@@ -165,8 +178,11 @@ export default function Friends() {
               {data.friends.map((f) => (
                 <Row
                   key={f.friendshipId}
+                  userId={f.userId}
                   email={f.email}
                   username={f.username}
+                  avatarColor={f.avatarColor}
+                  avatarPath={f.avatarPath}
                   action={
                     <button
                       onClick={() => withBusy(f.friendshipId, () => api.removeFriend(f.friendshipId))}

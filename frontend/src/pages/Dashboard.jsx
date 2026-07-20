@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import Hero from '../components/Hero.jsx';
 import Carousel from '../components/Carousel.jsx';
 import PlaylistCover from '../components/PlaylistCover.jsx';
+import PullToRefresh from '../components/PullToRefresh.jsx';
 import { api } from '../lib/api';
 
 function PlaylistRow({ playlists }) {
@@ -43,17 +44,21 @@ export default function Dashboard() {
   const [spotlight, setSpotlight] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([api.listMedia(), api.favorites().catch(() => []), api.listPlaylists().catch(() => [])]).then(
-      ([all, favs, lists]) => {
-        setMedia(all);
-        setFavorites(favs);
-        setPlaylists(lists);
-        if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
-        setLoading(false);
-      }
-    );
+  const load = useCallback(async () => {
+    const [all, favs, lists] = await Promise.all([
+      api.listMedia(),
+      api.favorites().catch(() => []),
+      api.listPlaylists().catch(() => []),
+    ]);
+    setMedia(all);
+    setFavorites(favs);
+    setPlaylists(lists);
+    if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
   }, []);
+
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, [load]);
 
   const recent = useMemo(() => [...media].slice(0, 20), [media]);
   const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
@@ -84,35 +89,39 @@ export default function Dashboard() {
 
   if (!media.length) {
     return (
-      <div className="min-h-screen bg-base-950">
-        <Navbar />
-        <div className="pt-32 text-center text-white/60 px-4">
-          <p className="text-lg">No media yet — upload your first family memory to get started.</p>
+      <PullToRefresh onRefresh={load}>
+        <div className="min-h-screen bg-base-950">
+          <Navbar />
+          <div className="pt-32 text-center text-white/60 px-4">
+            <p className="text-lg">No media yet — upload your first family memory to get started.</p>
+          </div>
         </div>
-      </div>
+      </PullToRefresh>
     );
   }
 
   return (
-    <div className="min-h-screen bg-base-950 pb-20">
-      <Navbar />
-      <Hero media={spotlight} />
+    <PullToRefresh onRefresh={load}>
+      <div className="min-h-screen bg-base-950 pb-20">
+        <Navbar />
+        <Hero media={spotlight} />
 
-      <div className="-mt-16 relative z-10">
-        <PlaylistRow playlists={playlists} />
-        <Carousel title="Trending Family Moments" items={recent} />
-        {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
-        {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}
-        <Carousel title="Recent Videos" items={videos.slice(0, 20)} />
-        {vacations.length > 0 && <Carousel title="Vacations" items={vacations} size="lg" />}
-        <Carousel title="Photo Highlights" items={photos.slice(0, 20)} size="sm" />
+        <div className="-mt-16 relative z-10">
+          <PlaylistRow playlists={playlists} />
+          <Carousel title="Trending Family Moments" items={recent} />
+          {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
+          {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}
+          <Carousel title="Recent Videos" items={videos.slice(0, 20)} />
+          {vacations.length > 0 && <Carousel title="Vacations" items={vacations} size="lg" />}
+          <Carousel title="Photo Highlights" items={photos.slice(0, 20)} size="sm" />
 
-        {Object.entries(categorized)
-          .filter(([cat]) => !['Uncategorized', 'Vacations'].includes(cat))
-          .map(([cat, items]) => (
-            <Carousel key={cat} title={cat} items={items} />
-          ))}
+          {Object.entries(categorized)
+            .filter(([cat]) => !['Uncategorized', 'Vacations'].includes(cat))
+            .map(([cat, items]) => (
+              <Carousel key={cat} title={cat} items={items} />
+            ))}
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   );
 }

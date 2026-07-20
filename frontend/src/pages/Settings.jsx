@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Camera, Loader2, AtSign } from 'lucide-react';
+import { Check, Camera, Loader2, AtSign, Phone } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -28,12 +28,20 @@ export default function Settings() {
   const [usernameError, setUsernameError] = useState('');
   const [usernameSaved, setUsernameSaved] = useState(false);
 
+  const [phone, setPhone] = useState('');
+  const [currentPhone, setCurrentPhone] = useState(null);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [phoneSaved, setPhoneSaved] = useState(false);
+
   const [usage, setUsage] = useState(null);
 
   useEffect(() => {
     api.me().then((me) => {
       setCurrentUsername(me.username);
       setUsername(me.username || '');
+      setCurrentPhone(me.phone);
+      setPhone(me.phone || '');
     });
     api.storageUsage().then(setUsage);
   }, []);
@@ -54,6 +62,24 @@ export default function Settings() {
       setUsernameError(err.message);
     } finally {
       setSavingUsername(false);
+    }
+  };
+
+  const savePhone = async (e) => {
+    e.preventDefault();
+    if (!phone.trim() || phone.trim() === currentPhone) return;
+    setSavingPhone(true);
+    setPhoneError('');
+    setPhoneSaved(false);
+    try {
+      const updated = await api.setPhone(phone.trim());
+      setCurrentPhone(updated.phone);
+      setPhone(updated.phone);
+      setPhoneSaved(true);
+    } catch (err) {
+      setPhoneError(err.message);
+    } finally {
+      setSavingPhone(false);
     }
   };
 
@@ -120,6 +146,32 @@ export default function Settings() {
             </button>
           </div>
           {usernameError && <p className="text-accent text-sm mt-2">{usernameError}</p>}
+        </form>
+
+        <form onSubmit={savePhone} className="mb-2 mt-4">
+          <label className="block text-xs text-white/50 mb-1.5">
+            Phone — another way for friends to find you (not verified — just a lookup convenience)
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center bg-base-800 rounded-md ring-1 ring-white/10 focus-within:ring-accent">
+              <Phone className="w-4 h-4 text-white/40 ml-3" />
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setPhoneSaved(false); }}
+                placeholder="(555) 123-4567"
+                className="flex-1 bg-transparent px-2 py-2.5 text-sm outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingPhone || !phone.trim() || phone.trim() === currentPhone}
+              className="bg-accent hover:bg-accent-dim transition-colors rounded-md px-4 text-sm font-semibold disabled:opacity-40"
+            >
+              {savingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : phoneSaved ? <Check className="w-4 h-4" /> : 'Save'}
+            </button>
+          </div>
+          {phoneError && <p className="text-accent text-sm mt-2">{phoneError}</p>}
         </form>
 
         <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4 mt-10">Profile</h2>
