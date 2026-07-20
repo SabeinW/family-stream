@@ -30,6 +30,8 @@ async function request(path, options = {}) {
 export const api = {
   register: (email, password) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  me: () => request('/auth/me'),
+  setUsername: (username) => request('/auth/username', { method: 'PATCH', body: JSON.stringify({ username }) }),
 
   listProfiles: () => request('/profiles'),
   createProfile: (data) => request('/profiles', { method: 'POST', body: JSON.stringify(data) }),
@@ -50,7 +52,7 @@ export const api = {
   },
 
   listFriends: () => request('/friends'),
-  sendFriendRequest: (email) => request('/friends/request', { method: 'POST', body: JSON.stringify({ email }) }),
+  sendFriendRequest: (identifier) => request('/friends/request', { method: 'POST', body: JSON.stringify({ identifier }) }),
   acceptFriend: (id) => request(`/friends/${id}/accept`, { method: 'POST' }),
   declineFriend: (id) => request(`/friends/${id}/decline`, { method: 'POST' }),
   removeFriend: (id) => request(`/friends/${id}`, { method: 'DELETE' }),

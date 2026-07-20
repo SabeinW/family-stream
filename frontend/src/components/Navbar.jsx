@@ -19,11 +19,11 @@ export default function Navbar() {
         scrolled ? 'bg-base-950/95 backdrop-blur-md shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
       }`}
     >
-      <div className="flex items-center justify-between px-4 md:px-10 py-3">
+      <div className="flex items-center justify-between px-3 sm:px-4 md:px-10 py-3">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2 text-accent font-display text-2xl tracking-wide">
-            <Clapperboard className="w-6 h-6" strokeWidth={2.5} />
-            FamilyStream
+            <Clapperboard className="w-6 h-6 shrink-0" strokeWidth={2.5} />
+            <span className="hidden sm:inline">FamilyStream</span>
           </Link>
           <nav className="hidden md:flex gap-6 text-sm text-white/80 font-medium">
             <Link to="/" className="hover:text-white transition-colors">Home</Link>
@@ -31,7 +31,7 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-0.5 sm:gap-3">
           <button
             aria-label="Search"
             onClick={() => navigate('/search')}

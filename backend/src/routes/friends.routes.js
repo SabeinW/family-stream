@@ -13,7 +13,7 @@ function pairKey(a, b) {
 function otherUser(friendship, myId) {
   const isRequester = friendship.requesterId === myId;
   const other = isRequester ? friendship.addressee : friendship.requester;
-  return { friendshipId: friendship.id, userId: other.id, email: other.email };
+  return { friendshipId: friendship.id, userId: other.id, email: other.email, username: other.username };
 }
 
 // Deletes any MediaShare/PlaylistShare rows between two users in both
@@ -45,7 +45,10 @@ router.get('/', requireAuth, async (req, res) => {
   const me = req.user.userId;
   const rows = await prisma.friendship.findMany({
     where: { OR: [{ requesterId: me }, { addresseeId: me }] },
-    include: { requester: { select: { id: true, email: true } }, addressee: { select: { id: true, email: true } } },
+    include: {
+      requester: { select: { id: true, email: true, username: true } },
+      addressee: { select: { id: true, email: true, username: true } },
+    },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -58,11 +61,16 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/request', requireAuth, async (req, res) => {
   const me = req.user.userId;
-  const email = (req.body.email || '').trim();
-  if (!email) return res.status(400).json({ error: 'Email is required.' });
+  // Accepts either an email or a @username — usernames are optional, so
+  // this falls back to email-only matching for accounts that haven't set one.
+  const identifier = String(req.body.identifier || req.body.email || '').trim();
+  if (!identifier) return res.status(400).json({ error: 'Email or username is required.' });
 
-  const target = await prisma.user.findUnique({ where: { email } });
-  if (!target) return res.status(404).json({ error: 'No account found with that email.' });
+  const usernameGuess = identifier.replace(/^@/, '').toLowerCase();
+  const target = await prisma.user.findFirst({
+    where: { OR: [{ email: identifier }, { username: usernameGuess }] },
+  });
+  if (!target) return res.status(404).json({ error: 'No account found with that email or username.' });
   if (target.id === me) return res.status(400).json({ error: "You can't friend yourself." });
 
   const key = pairKey(me, target.id);

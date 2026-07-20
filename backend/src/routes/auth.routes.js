@@ -2,9 +2,11 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 const TOKEN_TTL = '30d';
+const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
 router.post('/register', async (req, res) => {
   try {
@@ -62,6 +64,36 @@ router.post('/login', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Login failed.' });
   }
+});
+
+router.get('/me', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { id: true, email: true, username: true },
+  });
+  if (!user) return res.status(404).json({ error: 'Account not found.' });
+  res.json(user);
+});
+
+router.patch('/username', requireAuth, async (req, res) => {
+  const username = String(req.body.username || '').trim().toLowerCase();
+  if (!USERNAME_RE.test(username)) {
+    return res.status(400).json({
+      error: 'Username must be 3-20 characters: lowercase letters, numbers, and underscores only.',
+    });
+  }
+
+  const existing = await prisma.user.findUnique({ where: { username } });
+  if (existing && existing.id !== req.user.userId) {
+    return res.status(409).json({ error: 'That username is already taken.' });
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user.userId },
+    data: { username },
+    select: { id: true, email: true, username: true },
+  });
+  res.json(user);
 });
 
 module.exports = router;

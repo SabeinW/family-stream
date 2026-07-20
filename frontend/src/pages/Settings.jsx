@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Camera, Loader2 } from 'lucide-react';
+import { Check, Camera, Loader2, AtSign } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -14,6 +14,38 @@ export default function Settings() {
   const [savingName, setSavingName] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
+
+  const [username, setUsername] = useState('');
+  const [currentUsername, setCurrentUsername] = useState(null);
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSaved, setUsernameSaved] = useState(false);
+
+  useEffect(() => {
+    api.me().then((me) => {
+      setCurrentUsername(me.username);
+      setUsername(me.username || '');
+    });
+  }, []);
+
+  const saveUsername = async (e) => {
+    e.preventDefault();
+    const trimmed = username.trim().toLowerCase();
+    if (!trimmed || trimmed === currentUsername) return;
+    setSavingUsername(true);
+    setUsernameError('');
+    setUsernameSaved(false);
+    try {
+      const updated = await api.setUsername(trimmed);
+      setCurrentUsername(updated.username);
+      setUsername(updated.username);
+      setUsernameSaved(true);
+    } catch (err) {
+      setUsernameError(err.message);
+    } finally {
+      setSavingUsername(false);
+    }
+  };
 
   const saveName = async (e) => {
     e.preventDefault();
@@ -53,7 +85,34 @@ export default function Settings() {
         <h1 className="font-display text-3xl tracking-wide mb-1">Settings</h1>
         <p className="text-white/50 text-sm mb-8">Manage this profile and how the app looks for it.</p>
 
-        <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Profile</h2>
+        <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Account</h2>
+        <form onSubmit={saveUsername} className="mb-2">
+          <label className="block text-xs text-white/50 mb-1.5">
+            Username — lets friends add you without knowing your email
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center bg-base-800 rounded-md ring-1 ring-white/10 focus-within:ring-accent">
+              <AtSign className="w-4 h-4 text-white/40 ml-3" />
+              <input
+                value={username}
+                onChange={(e) => { setUsername(e.target.value.toLowerCase()); setUsernameSaved(false); }}
+                placeholder="username"
+                maxLength={20}
+                className="flex-1 bg-transparent px-2 py-2.5 text-sm outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingUsername || !username.trim() || username.trim() === currentUsername}
+              className="bg-accent hover:bg-accent-dim transition-colors rounded-md px-4 text-sm font-semibold disabled:opacity-40"
+            >
+              {savingUsername ? <Loader2 className="w-4 h-4 animate-spin" /> : usernameSaved ? <Check className="w-4 h-4" /> : 'Save'}
+            </button>
+          </div>
+          {usernameError && <p className="text-accent text-sm mt-2">{usernameError}</p>}
+        </form>
+
+        <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4 mt-10">Profile</h2>
         <div className="flex items-center gap-5 mb-4">
           <label className="relative group cursor-pointer shrink-0">
             <div

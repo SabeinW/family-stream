@@ -18,7 +18,17 @@ body {
   overscroll-behavior-y: none; /* stop iOS rubber-band revealing white edges */
 }
 
-/* Slim, dark-themed scrollbars for horizontal carousels */
+/* App-wide hidden scrollbars — this is an installable PWA meant to feel like
+   a native app, not a web page, so no visible scrollbar chrome anywhere
+   (the page still scrolls normally, just without the visible track/thumb). */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
 }

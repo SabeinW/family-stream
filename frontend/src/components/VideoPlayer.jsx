@@ -248,7 +248,7 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
               </div>
 
               <div className="flex items-center justify-between text-xs text-white/80">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button onClick={togglePlay}>{playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}</button>
                   <button onClick={toggleMute}>{muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
                   <input
@@ -257,13 +257,13 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
                     max={100}
                     value={muted ? 0 : volume * 100}
                     onChange={onVolume}
-                    className="player-range w-20"
+                    className="player-range w-20 hidden sm:block"
                     style={{ '--fill': `${muted ? 0 : volume * 100}%` }}
                   />
-                  <span>{formatTime(current)} / {formatTime(duration)}</span>
+                  <span className="whitespace-nowrap">{formatTime(current)} / {formatTime(duration)}</span>
                 </div>
 
-                <div className="flex items-center gap-3 relative">
+                <div className="flex items-center gap-2 sm:gap-3 relative">
                   <button onClick={() => setShowQuality((s) => !s)} className="flex items-center gap-1">
                     <Settings className="w-4 h-4" /> {quality}
                   </button>

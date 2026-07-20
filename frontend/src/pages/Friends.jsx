@@ -4,14 +4,18 @@ import { UserPlus, Check, X, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import { api } from '../lib/api';
 
-function Row({ email, action }) {
+function Row({ email, username, action }) {
+  const label = username ? `@${username}` : email;
   return (
     <div className="flex items-center justify-between bg-base-800 rounded-lg px-4 py-3 ring-1 ring-white/10">
       <div className="flex items-center gap-3 min-w-0">
         <span className="w-9 h-9 rounded-full bg-accent/20 text-accent flex items-center justify-center font-semibold shrink-0">
-          {email[0]?.toUpperCase()}
+          {(username || email)[0]?.toUpperCase()}
         </span>
-        <span className="truncate">{email}</span>
+        <div className="min-w-0">
+          <p className="truncate">{label}</p>
+          {username && <p className="text-xs text-white/40 truncate">{email}</p>}
+        </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">{action}</div>
     </div>
@@ -20,7 +24,7 @@ function Row({ email, action }) {
 
 export default function Friends() {
   const [data, setData] = useState({ friends: [], incoming: [], outgoing: [] });
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -31,14 +35,14 @@ export default function Friends() {
 
   const sendRequest = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!identifier.trim()) return;
     setSending(true);
     setError('');
     setNotice('');
     try {
-      const res = await api.sendFriendRequest(email.trim());
-      setNotice(res.status === 'accepted' ? `You and ${email.trim()} are now friends!` : 'Friend request sent.');
-      setEmail('');
+      const res = await api.sendFriendRequest(identifier.trim());
+      setNotice(res.status === 'accepted' ? `You and ${identifier.trim()} are now friends!` : 'Friend request sent.');
+      setIdentifier('');
       load();
     } catch (err) {
       setError(err.message);
@@ -66,21 +70,20 @@ export default function Friends() {
       <div className="pt-28 px-4 md:px-10 max-w-2xl">
         <h1 className="font-display text-3xl tracking-wide mb-1">Friends</h1>
         <p className="text-white/50 text-sm mb-8">
-          Add family and friends by email — you'll be able to share media and playlists with them.
+          Add family and friends by email or @username — you'll be able to share media and playlists with them.
         </p>
 
         <form onSubmit={sendRequest} className="flex gap-2 mb-2">
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="their@email.com"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="their@email.com or @username"
             className="flex-1 bg-base-800 rounded-md px-4 py-3 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
           />
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="submit"
-            disabled={sending || !email.trim()}
+            disabled={sending || !identifier.trim()}
             className="flex items-center gap-2 bg-accent hover:bg-accent-dim transition-colors rounded-md px-5 font-semibold disabled:opacity-40"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
@@ -100,6 +103,7 @@ export default function Friends() {
                 <Row
                   key={f.friendshipId}
                   email={f.email}
+                  username={f.username}
                   action={
                     <>
                       <button
@@ -134,6 +138,7 @@ export default function Friends() {
                 <Row
                   key={f.friendshipId}
                   email={f.email}
+                  username={f.username}
                   action={
                     <button
                       onClick={() => withBusy(f.friendshipId, () => api.removeFriend(f.friendshipId))}
@@ -161,6 +166,7 @@ export default function Friends() {
                 <Row
                   key={f.friendshipId}
                   email={f.email}
+                  username={f.username}
                   action={
                     <button
                       onClick={() => withBusy(f.friendshipId, () => api.removeFriend(f.friendshipId))}

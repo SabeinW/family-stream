@@ -70,7 +70,7 @@ function ShareControl({ mediaId, isOwner }) {
       </div>
 
       {visibility === 'custom' && (
-        <div className="max-h-32 overflow-y-auto space-y-1.5 mb-3 pl-1">
+        <div className="max-h-32 overflow-y-auto scrollbar-hidden space-y-1.5 mb-3 pl-1">
           {friends.length === 0 ? (
             <p className="text-white/40 text-xs">No friends yet — add some from the Friends page.</p>
           ) : (
@@ -193,7 +193,7 @@ export default function Hero({ media }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-base-900 rounded-xl ring-1 ring-white/10 shadow-card p-6 md:p-8"
+              className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-hidden bg-base-900 rounded-xl ring-1 ring-white/10 shadow-card p-6 md:p-8"
               onClick={(e) => e.stopPropagation()}
             >
               <button
