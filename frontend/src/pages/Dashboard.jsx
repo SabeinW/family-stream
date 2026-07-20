@@ -69,7 +69,7 @@ export default function Dashboard() {
       <Navbar />
       <Hero media={spotlight} />
 
-      <div className="-mt-24 relative z-10">
+      <div className="-mt-16 relative z-10">
         <Carousel title="Trending Family Moments" items={recent} />
         {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
         {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}
