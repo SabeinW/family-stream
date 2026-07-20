@@ -1,8 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import Hero from '../components/Hero.jsx';
 import Carousel from '../components/Carousel.jsx';
+import PlaylistCover from '../components/PlaylistCover.jsx';
 import { api } from '../lib/api';
+
+function PlaylistRow({ playlists }) {
+  const navigate = useNavigate();
+  if (!playlists.length) return null;
+  return (
+    <section className="relative mb-10 px-4 md:px-10">
+      <h2 className="text-lg md:text-xl font-semibold mb-3">Your Playlists</h2>
+      <div className="flex gap-3 overflow-x-auto scrollbar-hidden scroll-smooth pb-2">
+        {playlists.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => navigate(`/playlists/${p.id}`)}
+            className="flex-shrink-0 w-44 md:w-56 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg"
+          >
+            <PlaylistCover coverColor={p.coverColor} thumbnails={p.coverThumbnails} />
+            <p className="mt-1.5 text-sm text-white/90 truncate">{p.name}</p>
+            <p className="text-xs text-white/40">{p.itemCount} {p.itemCount === 1 ? 'item' : 'items'}</p>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function oneYearAgoRange() {
   const now = new Date();
@@ -14,16 +39,20 @@ function oneYearAgoRange() {
 export default function Dashboard() {
   const [media, setMedia] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
   const [spotlight, setSpotlight] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.listMedia(), api.favorites().catch(() => [])]).then(([all, favs]) => {
-      setMedia(all);
-      setFavorites(favs);
-      if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
-      setLoading(false);
-    });
+    Promise.all([api.listMedia(), api.favorites().catch(() => []), api.listPlaylists().catch(() => [])]).then(
+      ([all, favs, lists]) => {
+        setMedia(all);
+        setFavorites(favs);
+        setPlaylists(lists);
+        if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
+        setLoading(false);
+      }
+    );
   }, []);
 
   const recent = useMemo(() => [...media].slice(0, 20), [media]);
@@ -70,6 +99,7 @@ export default function Dashboard() {
       <Hero media={spotlight} />
 
       <div className="-mt-16 relative z-10">
+        <PlaylistRow playlists={playlists} />
         <Carousel title="Trending Family Moments" items={recent} />
         {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
         {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}

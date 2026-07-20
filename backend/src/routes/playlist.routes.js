@@ -19,10 +19,15 @@ const router = express.Router();
 // revoked since the item was added). Skipping this check would let someone
 // add another person's private media into their own friends-visible
 // playlist and leak it to their whole friend list.
+//
+// Also excludes items still `processing` (or `failed`) — a freshly
+// uploaded video has no streamPath yet, so showing it immediately would
+// just be a broken-looking card; it appears on its own once transcoding
+// finishes, same as everywhere else in the app.
 async function visibleItems(userId, items) {
   const out = [];
   for (const item of items) {
-    if (await canAccessMedia(userId, item.media)) out.push(item);
+    if (item.media.status === 'ready' && (await canAccessMedia(userId, item.media))) out.push(item);
   }
   return out;
 }

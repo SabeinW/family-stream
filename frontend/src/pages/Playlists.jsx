@@ -1,34 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ListVideo, Trash2, Loader2, Users, Lock } from 'lucide-react';
+import { Plus, Trash2, Loader2, Users, Lock } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
+import PlaylistCover from '../components/PlaylistCover.jsx';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext.jsx';
 import { THEMES } from '../lib/themes.js';
-
-function Cover({ coverColor, thumbnails }) {
-  const cells = [...thumbnails, null, null, null].slice(0, 4);
-  return (
-    <div
-      className="aspect-video rounded-lg overflow-hidden relative grid grid-cols-2 grid-rows-2 gap-px"
-      style={{ backgroundImage: `linear-gradient(135deg, rgb(${coverColor}), rgb(${coverColor} / 0.4))` }}
-    >
-      {cells.map((c, i) =>
-        c ? (
-          <img key={c.mediaId} src={api.thumbnailUrl(c.mediaId)} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div key={i} />
-        )
-      )}
-      {thumbnails.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <ListVideo className="w-8 h-8 text-white/50" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Playlists() {
   const { user } = useAuth();
@@ -108,7 +86,7 @@ export default function Playlists() {
                 className="text-left group"
               >
                 <div className="relative">
-                  <Cover coverColor={p.coverColor} thumbnails={p.coverThumbnails} />
+                  <PlaylistCover coverColor={p.coverColor} thumbnails={p.coverThumbnails} />
                   {p.ownerId === user?.id && (
                     <button
                       onClick={(e) => remove(e, p.id)}
