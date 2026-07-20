@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default color theme (Indigo). ThemeContext overwrites these at runtime
+     when a signed-in profile picks a different theme. */
+  --accent-rgb: 99 102 241;
+  --accent-dim-rgb: 67 56 202;
+  --accent-glow-rgb: 139 92 246;
+}
+
 html, body, #root {
   height: 100%;
 }
@@ -27,7 +35,7 @@ input[type='range'].player-range {
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    #6366f1 var(--fill, 0%),
+    rgb(var(--accent-rgb)) var(--fill, 0%),
     rgba(255, 255, 255, 0.25) var(--fill, 0%)
   );
 }

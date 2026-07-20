@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Watch from './pages/Watch.jsx';
 import Upload from './pages/Upload.jsx';
 import Search from './pages/Search.jsx';
+import Settings from './pages/Settings.jsx';
 
 function RequireAuth({ children }) {
   const { isAuthed } = useAuth();
@@ -61,6 +62,14 @@ export default function App() {
         element={
           <RequireProfile>
             <Upload />
+          </RequireProfile>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <RequireProfile>
+            <Settings />
           </RequireProfile>
         }
       />

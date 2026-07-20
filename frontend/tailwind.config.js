@@ -12,9 +12,11 @@ export default {
           600: '#282838',
         },
         accent: {
-          DEFAULT: '#6366F1', // electric indigo/blue-violet
-          dim: '#4338CA',
-          glow: '#8B5CF6',
+          // Sourced from CSS variables (see index.css) so the active color theme
+          // can be swapped at runtime without rebuilding the Tailwind stylesheet.
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          dim: 'rgb(var(--accent-dim-rgb) / <alpha-value>)',
+          glow: 'rgb(var(--accent-glow-rgb) / <alpha-value>)',
         },
       },
       fontFamily: {
@@ -29,7 +31,7 @@ export default {
       },
       boxShadow: {
         card: '0 10px 30px -10px rgba(0,0,0,0.7)',
-        glow: '0 0 40px -8px rgba(99,102,241,0.55)',
+        glow: '0 0 40px -8px rgb(var(--accent-rgb) / 0.55)',
       },
       keyframes: {
         shimmer: {
