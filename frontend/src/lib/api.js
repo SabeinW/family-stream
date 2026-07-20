@@ -69,6 +69,15 @@ export const api = {
     request(`/media/${id}/progress`, { method: 'PUT', body: JSON.stringify({ positionSec }) }),
   upload: (formData) => request('/media/upload', { method: 'POST', body: formData }),
   updateVisibility: (id, data) => request(`/media/${id}/visibility`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMedia: (id) => request(`/media/${id}`, { method: 'DELETE' }),
+
+  listPlaylists: () => request('/playlists'),
+  createPlaylist: (data) => request('/playlists', { method: 'POST', body: JSON.stringify(data) }),
+  getPlaylist: (id) => request(`/playlists/${id}`),
+  updatePlaylist: (id, data) => request(`/playlists/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePlaylist: (id) => request(`/playlists/${id}`, { method: 'DELETE' }),
+  addPlaylistItem: (id, mediaId) => request(`/playlists/${id}/items`, { method: 'POST', body: JSON.stringify({ mediaId }) }),
+  removePlaylistItem: (id, mediaId) => request(`/playlists/${id}/items/${mediaId}`, { method: 'DELETE' }),
 
   streamUrl: (id, quality) => {
     const params = new URLSearchParams({ profileToken: localStorage.getItem('fs_profile_token') || '' });

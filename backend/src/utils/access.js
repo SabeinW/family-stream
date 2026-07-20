@@ -44,4 +44,39 @@ async function canAccessMedia(userId, media) {
   return false;
 }
 
-module.exports = { VALID_VISIBILITIES, getFriendIds, mediaAccessWhere, canAccessMedia };
+// Same shape as mediaAccessWhere, but Playlist.ownerId is never null (no
+// legacy-migration fail-open case — playlists didn't exist before this).
+function playlistAccessWhere(userId, friendIds) {
+  return {
+    OR: [
+      { ownerId: userId },
+      { visibility: 'friends', ownerId: { in: friendIds } },
+      { visibility: 'custom', shares: { some: { userId } } },
+    ],
+  };
+}
+
+async function canAccessPlaylist(userId, playlist) {
+  if (!playlist) return false;
+  if (playlist.ownerId === userId) return true;
+  if (playlist.visibility === 'friends') {
+    const friendIds = await getFriendIds(userId);
+    return friendIds.includes(playlist.ownerId);
+  }
+  if (playlist.visibility === 'custom') {
+    const share = await prisma.playlistShare.findUnique({
+      where: { playlistId_userId: { playlistId: playlist.id, userId } },
+    });
+    return !!share;
+  }
+  return false;
+}
+
+module.exports = {
+  VALID_VISIBILITIES,
+  getFriendIds,
+  mediaAccessWhere,
+  canAccessMedia,
+  playlistAccessWhere,
+  canAccessPlaylist,
+};

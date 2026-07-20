@@ -9,6 +9,8 @@ import Upload from './pages/Upload.jsx';
 import Search from './pages/Search.jsx';
 import Settings from './pages/Settings.jsx';
 import Friends from './pages/Friends.jsx';
+import Playlists from './pages/Playlists.jsx';
+import PlaylistDetail from './pages/PlaylistDetail.jsx';
 
 function RequireAuth({ children }) {
   const { isAuthed } = useAuth();
@@ -79,6 +81,22 @@ export default function App() {
         element={
           <RequireProfile>
             <Friends />
+          </RequireProfile>
+        }
+      />
+      <Route
+        path="/playlists"
+        element={
+          <RequireProfile>
+            <Playlists />
+          </RequireProfile>
+        }
+      />
+      <Route
+        path="/playlists/:id"
+        element={
+          <RequireProfile>
+            <PlaylistDetail />
           </RequireProfile>
         }
       />

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import DeleteMediaButton from './DeleteMediaButton.jsx';
 
 function formatTime(sec) {
   if (!Number.isFinite(sec)) return '0:00';
@@ -16,7 +17,7 @@ function formatTime(sec) {
   return h ? `${h}:${mm}:${String(s).padStart(2, '0')}` : `${mm}:${String(s).padStart(2, '0')}`;
 }
 
-export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
+export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwner = false, onDeleted }) {
   const videoRef = useRef(null);
   const wrapperRef = useRef(null);
   const controlsTimeout = useRef(null);
@@ -205,14 +206,17 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
                 </button>
                 <h3 className="font-semibold text-sm md:text-base truncate">{media.title}</h3>
               </div>
-              {theater && (
-                <button
-                  onClick={toggleTheater}
-                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/20 px-3 py-2 rounded-full transition-colors shrink-0"
-                >
-                  <X className="w-4 h-4" /> Exit Theater
-                </button>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {isOwner && <DeleteMediaButton mediaId={media.id} onDeleted={onDeleted} />}
+                {theater && (
+                  <button
+                    onClick={toggleTheater}
+                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/20 px-3 py-2 rounded-full transition-colors"
+                  >
+                    <X className="w-4 h-4" /> Exit Theater
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Center play/pause + skip */}

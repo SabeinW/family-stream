@@ -19,6 +19,8 @@ model User {
   profiles     Profile[]
   media        Media[]
   mediaShares  MediaShare[]
+  playlists      Playlist[]
+  playlistShares PlaylistShare[]
 
   friendRequestsSent     Friendship[] @relation("Requester")
   friendRequestsReceived Friendship[] @relation("Addressee")
@@ -78,6 +80,7 @@ model Media {
   favorites      Favorite[]
   progress       WatchProgress[]
   renditions     VideoRendition[]
+  playlistItems  PlaylistItem[]
 
   // Ownership & sharing. ownerId is nullable only to survive the first
   // `prisma db push` against pre-existing rows — backfillOwners.js sets it
@@ -142,4 +145,43 @@ model WatchProgress {
   updatedAt    DateTime @updatedAt
 
   @@unique([profileId, mediaId])
+}
+
+model Playlist {
+  id         String          @id @default(uuid())
+  name       String
+  owner      User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId    String
+  visibility String          @default("private") // private | friends | custom
+  coverColor String          @default("99 102 241") // "R G B" — owner-selectable accent for the playlist's card
+  items      PlaylistItem[]
+  shares     PlaylistShare[]
+  createdAt  DateTime        @default(now())
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+model PlaylistItem {
+  id         String   @id @default(uuid())
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  playlistId String
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId    String
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, mediaId])
+}
+
+// Explicit per-user share grant, used when Playlist.visibility === "custom".
+model PlaylistShare {
+  id         String   @id @default(uuid())
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  playlistId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  createdAt  DateTime @default(now())
+
+  @@unique([playlistId, userId])
+  @@index([userId])
 }

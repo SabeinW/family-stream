@@ -11,6 +11,7 @@ const profileRoutes = require('./routes/profile.routes');
 const mediaRoutes = require('./routes/media.routes');
 const streamRoutes = require('./routes/stream.routes');
 const friendsRoutes = require('./routes/friends.routes');
+const playlistRoutes = require('./routes/playlist.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -37,6 +38,7 @@ app.use('/api/profiles', profileRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/friends', friendsRoutes);
+app.use('/api/playlists', playlistRoutes);
 
 // Centralized error handler (e.g. Multer file-too-large errors)
 app.use((err, req, res, next) => {

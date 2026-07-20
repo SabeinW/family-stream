@@ -1,11 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
+import DeleteMediaButton from '../components/DeleteMediaButton.jsx';
 
 export default function Watch() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [media, setMedia] = useState(null);
   const [theater, setTheater] = useState(false);
 
@@ -54,9 +59,25 @@ export default function Watch() {
         className="relative z-10 w-full px-0 md:px-6"
       >
         {media.type === 'video' ? (
-          <VideoPlayer media={media} onTheaterChange={handleTheaterChange} />
+          <VideoPlayer
+            media={media}
+            onTheaterChange={handleTheaterChange}
+            isOwner={media.ownerId === user?.id}
+            onDeleted={() => navigate('/')}
+          />
         ) : (
-          <img src={api.photoUrl(media.id)} alt={media.title} className="max-h-screen max-w-full object-contain mx-auto" />
+          <>
+            <div className="fixed top-0 inset-x-0 z-20 flex items-center justify-between p-4 safe-top bg-gradient-to-b from-black/80 to-transparent">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-white/10 shrink-0">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h3 className="font-semibold text-sm md:text-base truncate">{media.title}</h3>
+              </div>
+              {media.ownerId === user?.id && <DeleteMediaButton mediaId={media.id} onDeleted={() => navigate('/')} />}
+            </div>
+            <img src={api.photoUrl(media.id)} alt={media.title} className="max-h-screen max-w-full object-contain mx-auto" />
+          </>
         )}
       </motion.div>
     </div>

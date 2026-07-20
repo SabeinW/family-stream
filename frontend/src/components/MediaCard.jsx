@@ -17,7 +17,7 @@ export default function MediaCard({ media, size = 'md' }) {
 
   return (
     <motion.button
-      onClick={() => (media.type === 'video' ? navigate(`/watch/${media.id}`) : null)}
+      onClick={() => navigate(`/watch/${media.id}`)}
       whileHover={{ scale: 1.06, zIndex: 10 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       className={`relative flex-shrink-0 ${widths[size]} text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg`}
