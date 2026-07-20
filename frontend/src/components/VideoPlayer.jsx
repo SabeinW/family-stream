@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, Volume2, VolumeX, RotateCcw, RotateCw,
-  Maximize, Minimize, ArrowLeft, Settings,
+  Maximize, Minimize, ArrowLeft, Settings, X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -91,6 +91,13 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
+  };
+
+  const toggleTheater = () => {
+    setTheater((t) => {
+      onTheaterChange?.(!t);
+      return !t;
+    });
   };
 
   const toggleFullscreen = () => {
@@ -191,11 +198,21 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
             className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/50 flex flex-col justify-between"
           >
             {/* Top bar */}
-            <div className="flex items-center gap-3 p-4">
-              <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-white/10">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h3 className="font-semibold text-sm md:text-base">{media.title}</h3>
+            <div className="flex items-center justify-between gap-3 p-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-white/10 shrink-0">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h3 className="font-semibold text-sm md:text-base truncate">{media.title}</h3>
+              </div>
+              {theater && (
+                <button
+                  onClick={toggleTheater}
+                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/20 px-3 py-2 rounded-full transition-colors shrink-0"
+                >
+                  <X className="w-4 h-4" /> Exit Theater
+                </button>
+              )}
             </div>
 
             {/* Center play/pause + skip */}
@@ -264,7 +281,7 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange }) {
                     </div>
                   )}
                   <button
-                    onClick={() => setTheater((t) => { onTheaterChange?.(!t); return !t; })}
+                    onClick={toggleTheater}
                     className={`text-[10px] uppercase tracking-wide font-semibold border rounded px-2 py-1 transition-colors ${
                       theater ? 'bg-white text-black border-white' : 'border-white/30'
                     }`}
