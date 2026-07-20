@@ -128,8 +128,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Select a profile -> issue a short-lived profile token used for
-// personalized requests (favorites, watch progress, streaming).
+// Select a profile -> issue a profile token used for personalized requests
+// (favorites, watch progress, streaming, thumbnails, downloads).
 router.post('/:id/select', requireAuth, async (req, res) => {
   const profile = await prisma.profile.findFirst({
     where: { id: req.params.id, userId: req.user.userId },
@@ -142,10 +142,15 @@ router.post('/:id/select', requireAuth, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
+  // Matches the account token's 30d lifetime — there's no security reason
+  // for this to be shorter (it doesn't grant anything the account token
+  // doesn't already grant), and a short lifetime meant every image on the
+  // page silently broke every 12h with no visible error until the user
+  // logged back in.
   const profileToken = jwt.sign(
     { profileId: profile.id, userId: req.user.userId },
     process.env.JWT_SECRET,
-    { expiresIn: '12h' }
+    { expiresIn: '30d' }
   );
 
   res.json({

@@ -9,6 +9,34 @@ function authHeaders() {
   return headers;
 }
 
+// Handles an expired/invalid token by clearing it and doing a full page
+// navigation back to the right re-auth step. A stale profile token used to
+// fail silently — every <img>/<video> src depending on it (thumbnails,
+// photos, streaming, downloads) just broke with no visible error until the
+// user thought to log out and back in. `code` (see backend/src/middleware/
+// auth.js) distinguishes an expired token from an ordinary wrong-password/
+// wrong-PIN 401, which must NOT force a redirect while someone's mid-login.
+let redirectingForAuth = false;
+function handleExpiredToken(code) {
+  if (redirectingForAuth) return;
+  const path = window.location.pathname;
+
+  if (code === 'AUTH_TOKEN_INVALID') {
+    if (path.startsWith('/login')) return;
+    localStorage.removeItem('fs_token');
+    localStorage.removeItem('fs_profile_token');
+    localStorage.removeItem('fs_profile');
+    redirectingForAuth = true;
+    window.location.href = '/login';
+  } else if (code === 'PROFILE_TOKEN_INVALID') {
+    if (path.startsWith('/profiles') || path.startsWith('/login')) return;
+    localStorage.removeItem('fs_profile_token');
+    localStorage.removeItem('fs_profile');
+    redirectingForAuth = true;
+    window.location.href = '/profiles';
+  }
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
@@ -21,6 +49,9 @@ async function request(path, options = {}) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (res.status === 401 && (body.code === 'AUTH_TOKEN_INVALID' || body.code === 'PROFILE_TOKEN_INVALID')) {
+      handleExpiredToken(body.code);
+    }
     throw new Error(body.error || `Request failed (${res.status})`);
   }
   if (res.status === 204) return null;
