@@ -48,7 +48,7 @@ export default function Navbar() {
           <button
             onClick={switchProfile}
             className="w-8 h-8 rounded-md flex items-center justify-center text-sm font-semibold ring-1 ring-white/20"
-            style={{ backgroundColor: profile?.avatarColor || '#E50914' }}
+            style={{ backgroundColor: profile?.avatarColor || '#6366F1' }}
             aria-label="Switch profile"
           >
             {profile?.name?.[0]?.toUpperCase() || '?'}

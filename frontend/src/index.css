@@ -27,7 +27,7 @@ input[type='range'].player-range {
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    #e50914 var(--fill, 0%),
+    #6366f1 var(--fill, 0%),
     rgba(255, 255, 255, 0.25) var(--fill, 0%)
   );
 }

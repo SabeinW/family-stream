@@ -5,7 +5,7 @@ import { Plus, Lock } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const COLORS = ['#E50914', '#7B2CBF', '#1E88E5', '#00A676', '#F4A100'];
+const COLORS = ['#6366F1', '#8B5CF6', '#1E88E5', '#00A676', '#F4A100'];
 
 export default function ProfileSelect() {
   const [profiles, setProfiles] = useState([]);

@@ -30,7 +30,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-base-950 relative flex items-center justify-center px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(229,9,20,0.15),_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(99,102,241,0.18),_transparent_60%)]" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}

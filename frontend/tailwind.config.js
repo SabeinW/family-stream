@@ -5,16 +5,16 @@ export default {
     extend: {
       colors: {
         base: {
-          950: '#040404',
-          900: '#0b0b0d',
-          800: '#141417',
-          700: '#1e1e22',
-          600: '#2a2a2f',
+          950: '#030308',
+          900: '#0a0a12',
+          800: '#12121c',
+          700: '#1c1c2b',
+          600: '#282838',
         },
         accent: {
-          DEFAULT: '#E50914', // signature cinematic red
-          dim: '#B00610',
-          glow: '#FF1E2D',
+          DEFAULT: '#6366F1', // electric indigo/blue-violet
+          dim: '#4338CA',
+          glow: '#8B5CF6',
         },
       },
       fontFamily: {
@@ -29,7 +29,7 @@ export default {
       },
       boxShadow: {
         card: '0 10px 30px -10px rgba(0,0,0,0.7)',
-        glow: '0 0 40px -8px rgba(229,9,20,0.55)',
+        glow: '0 0 40px -8px rgba(99,102,241,0.55)',
       },
       keyframes: {
         shimmer: {
