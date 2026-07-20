@@ -6,6 +6,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env before starting}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:8080}
       PORT: 4000
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
     volumes:
       - media_uploads:/app/src/uploads
       - db_data:/app/data
