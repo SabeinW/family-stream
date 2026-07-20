@@ -1,10 +1,24 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { api } from '../lib/api';
 
 const AuthContext = createContext(null);
 
+// The account JWT already carries { userId, email } (see backend
+// auth.routes.js) — decoding it client-side (no signature check, purely for
+// UI use like "is this profile mine") avoids a round trip and works
+// immediately for sessions that logged in before this field existed.
+function decodeUser(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return { id: payload.userId, email: payload.email };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('fs_token'));
+  const user = useMemo(() => (token ? decodeUser(token) : null), [token]);
   const [profile, setProfile] = useState(() => {
     const raw = localStorage.getItem('fs_profile');
     return raw ? JSON.parse(raw) : null;
@@ -59,6 +73,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         token,
+        user,
         profile,
         login,
         register,

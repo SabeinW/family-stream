@@ -6,7 +6,7 @@ const { v4: uuid } = require('uuid');
 const prisma = require('../utils/prisma');
 const { requireAuth, requireProfile } = require('../middleware/auth');
 const { transcodeLadder, probe, generateThumbnail } = require('../utils/ffmpeg');
-const { getFriendIds, mediaAccessWhere, canAccessMedia } = require('../utils/access');
+const { getFriendIds, mediaAccessWhere, canAccessMedia, VALID_VISIBILITIES } = require('../utils/access');
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
 
-    const { title, category, tags, description, takenAt } = req.body;
+    const { title, category, tags, description, takenAt, visibility } = req.body;
     const isVideo = req.file.mimetype.startsWith('video/');
 
     const media = await prisma.media.create({
@@ -55,8 +55,10 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
         streamPath: isVideo ? null : req.file.filename,
         // Ownership is derived only from the verified JWT, never from any
         // client-supplied field, so uploads can't be attributed to someone
-        // else. Defaults to private; sharing is changed after upload.
+        // else. "custom" isn't offered at upload time (no share list yet to
+        // attach), only afterward via PATCH /:id/visibility.
         ownerId: req.user.userId,
+        visibility: visibility === 'friends' ? 'friends' : 'private',
       },
     });
 
@@ -151,7 +153,7 @@ router.get('/categories', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   const media = await prisma.media.findUnique({
     where: { id: req.params.id },
-    include: { renditions: { orderBy: { height: 'desc' } } },
+    include: { renditions: { orderBy: { height: 'desc' } }, shares: { select: { userId: true } } },
   });
   if (!media || !(await canAccessMedia(req.user.userId, media))) {
     return res.status(404).json({ error: 'Not found.' });
@@ -180,6 +182,46 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
   await prisma.media.delete({ where: { id: media.id } }); // cascades renditions/favorites/progress
   res.json({ ok: true });
+});
+
+// PATCH /api/media/:id/visibility  { visibility: 'private'|'friends'|'custom', shareWith?: string[] }
+router.patch('/:id/visibility', requireAuth, async (req, res) => {
+  const media = await prisma.media.findUnique({ where: { id: req.params.id } });
+  if (!media || media.ownerId !== req.user.userId) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
+
+  const { visibility, shareWith } = req.body;
+  if (!VALID_VISIBILITIES.includes(visibility)) {
+    return res.status(400).json({ error: 'Invalid visibility value.' });
+  }
+
+  let targetUserIds = [];
+  if (visibility === 'custom') {
+    const requested = Array.isArray(shareWith) ? [...new Set(shareWith)] : [];
+    const friendIds = await getFriendIds(req.user.userId);
+    if (requested.some((id) => !friendIds.includes(id))) {
+      return res.status(400).json({ error: 'Can only share with current friends.' });
+    }
+    targetUserIds = requested;
+  }
+
+  // Always clear existing shares first, on every transition (not just when
+  // landing on "custom"), so custom -> private -> custom can't resurrect
+  // stale grants from before the visibility was changed away and back.
+  await prisma.$transaction([
+    prisma.mediaShare.deleteMany({ where: { mediaId: media.id } }),
+    prisma.media.update({ where: { id: media.id }, data: { visibility } }),
+    ...(targetUserIds.length
+      ? [prisma.mediaShare.createMany({ data: targetUserIds.map((userId) => ({ mediaId: media.id, userId })) })]
+      : []),
+  ]);
+
+  const updated = await prisma.media.findUnique({
+    where: { id: media.id },
+    include: { shares: { select: { userId: true } } },
+  });
+  res.json(updated);
 });
 
 // --- Profile-scoped: favorites & watch progress ---

@@ -9,6 +9,7 @@ export default function Upload() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
+  const [visibility, setVisibility] = useState('private');
   const [status, setStatus] = useState('idle'); // idle | uploading | done | error
   const [dragOver, setDragOver] = useState(false);
 
@@ -21,6 +22,7 @@ export default function Upload() {
     form.append('title', title || file.name);
     form.append('category', category || 'Uncategorized');
     form.append('tags', tags);
+    form.append('visibility', visibility);
     try {
       await api.upload(form);
       setStatus('done');
@@ -85,6 +87,17 @@ export default function Upload() {
             placeholder="Tags, comma-separated"
             className="w-full bg-base-800 rounded-md px-4 py-3 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
           />
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
+            className="w-full bg-base-800 rounded-md px-4 py-3 text-sm outline-none ring-1 ring-white/10 focus:ring-accent"
+          >
+            <option value="private">Private — only me</option>
+            <option value="friends">Shared with friends</option>
+          </select>
+          <p className="text-white/40 text-xs -mt-2">
+            You can fine-tune sharing (including specific friends) anytime from a memory's Details view.
+          </p>
 
           <motion.button
             whileTap={{ scale: 0.97 }}

@@ -66,6 +66,7 @@ export const api = {
   saveProgress: (id, positionSec) =>
     request(`/media/${id}/progress`, { method: 'PUT', body: JSON.stringify({ positionSec }) }),
   upload: (formData) => request('/media/upload', { method: 'POST', body: formData }),
+  updateVisibility: (id, data) => request(`/media/${id}/visibility`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   streamUrl: (id, quality) => {
     const params = new URLSearchParams({ profileToken: localStorage.getItem('fs_profile_token') || '' });
