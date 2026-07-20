@@ -53,5 +53,5 @@ export const api = {
     return `${BASE}/stream/${id}?${params.toString()}`;
   },
   photoUrl: (id) => `${BASE}/stream/photo/${id}?profileToken=${encodeURIComponent(localStorage.getItem('fs_profile_token') || '')}`,
-  thumbnailUrl: (id) => `${BASE}/stream/thumbnail/${id}`,
+  thumbnailUrl: (id) => `${BASE}/stream/thumbnail/${id}?profileToken=${encodeURIComponent(localStorage.getItem('fs_profile_token') || '')}`,
 };

@@ -26,6 +26,7 @@ ENV DATABASE_URL="file:/app/data/dev.db"
 EXPOSE 4000
 
 # Sync the SQLite schema (creates the DB file on first boot, no-op after),
-# then start the API. Switch to `prisma migrate deploy` once you've run
+# backfill any Media rows missing an owner (idempotent, no-op once caught
+# up), then start the API. Switch to `prisma migrate deploy` once you've run
 # `npx prisma migrate dev` locally and committed a prisma/migrations folder.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node src/server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node src/scripts/backfillOwners.js && node src/server.js"]

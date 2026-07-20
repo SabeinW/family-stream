@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const prisma = require('../utils/prisma');
 const { requireProfile } = require('../middleware/auth');
+const { canAccessMedia } = require('../utils/access');
 
 const router = express.Router();
 
@@ -27,6 +28,9 @@ router.get('/:id', requireProfile, async (req, res) => {
     include: { renditions: true },
   });
   if (!media || media.type !== 'video' || media.status !== 'ready') {
+    return res.status(404).json({ error: 'Video not available.' });
+  }
+  if (!(await canAccessMedia(req.profile.userId, media))) {
     return res.status(404).json({ error: 'Video not available.' });
   }
 
@@ -71,15 +75,20 @@ router.get('/:id', requireProfile, async (req, res) => {
 router.get('/photo/:id', requireProfile, async (req, res) => {
   const media = await prisma.media.findUnique({ where: { id: req.params.id } });
   if (!media || media.type !== 'photo') return res.status(404).end();
+  if (!(await canAccessMedia(req.profile.userId, media))) return res.status(404).end();
   const filePath = path.join(ORIGINALS, media.originalPath);
   if (!fs.existsSync(filePath)) return res.status(404).end();
   res.sendFile(filePath);
 });
 
-// GET /api/stream/thumbnail/:id — lightweight JPEG for cards/carousels
-router.get('/thumbnail/:id', async (req, res) => {
+// GET /api/stream/thumbnail/:id — lightweight JPEG for cards/carousels.
+// Uses the profile token like the other stream routes (the frontend already
+// sends one via ?profileToken= for <img> tags), so thumbnails respect the
+// same access rules as everything else instead of being world-readable.
+router.get('/thumbnail/:id', requireProfile, async (req, res) => {
   const media = await prisma.media.findUnique({ where: { id: req.params.id } });
   if (!media || !media.thumbnailPath) return res.status(404).end();
+  if (!(await canAccessMedia(req.profile.userId, media))) return res.status(404).end();
   const dir = media.type === 'video' ? THUMBS : ORIGINALS;
   const filePath = path.join(dir, media.thumbnailPath);
   if (!fs.existsSync(filePath)) return res.status(404).end();

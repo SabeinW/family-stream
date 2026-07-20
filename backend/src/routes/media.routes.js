@@ -6,6 +6,7 @@ const { v4: uuid } = require('uuid');
 const prisma = require('../utils/prisma');
 const { requireAuth, requireProfile } = require('../middleware/auth');
 const { transcodeLadder, probe, generateThumbnail } = require('../utils/ffmpeg');
+const { getFriendIds, mediaAccessWhere, canAccessMedia } = require('../utils/access');
 
 const router = express.Router();
 
@@ -52,6 +53,10 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
         takenAt: takenAt ? new Date(takenAt) : null,
         // Photos serve directly from originals; no transcode needed.
         streamPath: isVideo ? null : req.file.filename,
+        // Ownership is derived only from the verified JWT, never from any
+        // client-supplied field, so uploads can't be attributed to someone
+        // else. Defaults to private; sharing is changed after upload.
+        ownerId: req.user.userId,
       },
     });
 
@@ -109,7 +114,7 @@ async function generatePhotoThumbnail(mediaId, filename) {
 // GET /api/media?search=&category=&type=&tag=
 router.get('/', requireAuth, async (req, res) => {
   const { search, category, type, tag } = req.query;
-  const where = {
+  const filters = {
     status: 'ready',
     ...(category ? { category } : {}),
     ...(type ? { type } : {}),
@@ -125,13 +130,18 @@ router.get('/', requireAuth, async (req, res) => {
       : {}),
   };
 
-  const media = await prisma.media.findMany({ where, orderBy: { createdAt: 'desc' } });
+  const friendIds = await getFriendIds(req.user.userId);
+  const media = await prisma.media.findMany({
+    where: { AND: [filters, mediaAccessWhere(req.user.userId, friendIds)] },
+    orderBy: { createdAt: 'desc' },
+  });
   res.json(media);
 });
 
 router.get('/categories', requireAuth, async (req, res) => {
+  const friendIds = await getFriendIds(req.user.userId);
   const rows = await prisma.media.findMany({
-    where: { status: 'ready' },
+    where: { AND: [{ status: 'ready' }, mediaAccessWhere(req.user.userId, friendIds)] },
     select: { category: true },
     distinct: ['category'],
   });
@@ -143,7 +153,9 @@ router.get('/:id', requireAuth, async (req, res) => {
     where: { id: req.params.id },
     include: { renditions: { orderBy: { height: 'desc' } } },
   });
-  if (!media) return res.status(404).json({ error: 'Not found.' });
+  if (!media || !(await canAccessMedia(req.user.userId, media))) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
   res.json(media);
 });
 
@@ -152,7 +164,11 @@ router.delete('/:id', requireAuth, async (req, res) => {
     where: { id: req.params.id },
     include: { renditions: true },
   });
-  if (!media) return res.status(404).json({ error: 'Not found.' });
+  // Stricter than read access: only the owner may delete, even for legacy
+  // ownerId=NULL rows (those are fail-open for *reads* only, not deletes).
+  if (!media || media.ownerId !== req.user.userId) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
 
   [
     media.originalPath && path.join(ORIGINALS, media.originalPath),
@@ -169,8 +185,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // --- Profile-scoped: favorites & watch progress ---
 
 router.post('/:id/favorite', requireProfile, async (req, res) => {
-  const { profileId } = req.profile;
+  const { profileId, userId } = req.profile;
   const mediaId = req.params.id;
+
+  const media = await prisma.media.findUnique({ where: { id: mediaId } });
+  if (!(await canAccessMedia(userId, media))) return res.status(404).json({ error: 'Not found.' });
+
   const existing = await prisma.favorite.findUnique({
     where: { profileId_mediaId: { profileId, mediaId } },
   });
@@ -183,18 +203,28 @@ router.post('/:id/favorite', requireProfile, async (req, res) => {
 });
 
 router.get('/profile/favorites', requireProfile, async (req, res) => {
+  const { profileId, userId } = req.profile;
   const favorites = await prisma.favorite.findMany({
-    where: { profileId: req.profile.profileId },
+    where: { profileId },
     include: { media: true },
     orderBy: { createdAt: 'desc' },
   });
-  res.json(favorites.map((f) => f.media));
+  // Access may have been revoked (unshared/unfriended) since a favorite was
+  // made, so re-check on every read rather than trusting the stored row.
+  const accessible = [];
+  for (const f of favorites) {
+    if (await canAccessMedia(userId, f.media)) accessible.push(f.media);
+  }
+  res.json(accessible);
 });
 
 router.put('/:id/progress', requireProfile, async (req, res) => {
   const { positionSec } = req.body;
-  const { profileId } = req.profile;
+  const { profileId, userId } = req.profile;
   const mediaId = req.params.id;
+
+  const media = await prisma.media.findUnique({ where: { id: mediaId } });
+  if (!(await canAccessMedia(userId, media))) return res.status(404).json({ error: 'Not found.' });
 
   const progress = await prisma.watchProgress.upsert({
     where: { profileId_mediaId: { profileId, mediaId } },

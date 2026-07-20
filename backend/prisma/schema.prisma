@@ -16,6 +16,31 @@ model User {
   passwordHash String
   createdAt    DateTime  @default(now())
   profiles     Profile[]
+  media        Media[]
+  mediaShares  MediaShare[]
+
+  friendRequestsSent     Friendship[] @relation("Requester")
+  friendRequestsReceived Friendship[] @relation("Addressee")
+}
+
+// Friend connection between two accounts. `pairKey` is a canonicalized,
+// order-independent key (min(id,id):max(id,id)) computed by the route
+// handler before writing, so A->B and B->A can never both exist as separate
+// rows — a plain @@unique([requesterId, addresseeId]) only blocks one order.
+model Friendship {
+  id          String   @id @default(uuid())
+  requester   User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId String
+  addressee   User     @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  addresseeId String
+  status      String   @default("pending") // pending | accepted
+  pairKey     String
+  createdAt   DateTime @default(now())
+
+  @@unique([pairKey])
+  @@index([status])
+  @@index([requesterId])
+  @@index([addresseeId])
 }
 
 model Profile {
@@ -51,6 +76,33 @@ model Media {
   favorites      Favorite[]
   progress       WatchProgress[]
   renditions     VideoRendition[]
+
+  // Ownership & sharing. ownerId is nullable only to survive the first
+  // `prisma db push` against pre-existing rows — backfillOwners.js sets it
+  // from `uploadedBy` automatically on every boot. NULL is treated as
+  // visible-to-everyone (fail-open) in access.js so nothing gets locked out
+  // during that backfill window; SQLite has no enum type, so `visibility`
+  // is validated in application code, not the schema.
+  ownerId    String?
+  visibility String       @default("private") // private | friends | custom
+  owner      User?        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  shares     MediaShare[]
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+// Explicit per-user share grant, used when Media.visibility === "custom".
+model MediaShare {
+  id        String   @id @default(uuid())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([mediaId, userId])
+  @@index([userId])
 }
 
 // One row per encoded quality level (adaptive-quality selector on the frontend).

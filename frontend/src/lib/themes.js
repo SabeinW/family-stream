@@ -6,6 +6,9 @@ export const THEMES = [
   { id: 'violet', name: 'Violet', accent: '139 92 246', dim: '109 40 217', glow: '196 181 253' },
   { id: 'royal', name: 'Royal Purple', accent: '168 85 247', dim: '126 34 206', glow: '216 180 254' },
   { id: 'sky', name: 'Sky', accent: '14 165 233', dim: '3 105 161', glow: '56 189 248' },
+  { id: 'red', name: 'Red', accent: '239 68 68', dim: '185 28 28', glow: '248 113 113' },
+  { id: 'green', name: 'Green', accent: '16 185 129', dim: '4 120 87', glow: '52 211 153' },
+  { id: 'orange', name: 'Orange', accent: '249 115 22', dim: '194 65 12', glow: '251 146 60' },
 ];
 
 export const DEFAULT_THEME_ID = 'indigo';
