@@ -10,12 +10,13 @@ const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const mediaRoutes = require('./routes/media.routes');
 const streamRoutes = require('./routes/stream.routes');
+const friendsRoutes = require('./routes/friends.routes');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Ensure upload directories exist on first run.
-['originals', 'transcoded', 'thumbnails'].forEach((dir) => {
+['originals', 'transcoded', 'thumbnails', 'avatars'].forEach((dir) => {
   const full = path.join(__dirname, 'uploads', dir);
   fs.mkdirSync(full, { recursive: true });
 });
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/stream', streamRoutes);
+app.use('/api/friends', friendsRoutes);
 
 // Centralized error handler (e.g. Multer file-too-large errors)
 app.use((err, req, res, next) => {

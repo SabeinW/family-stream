@@ -43,9 +43,32 @@ export function AuthProvider({ children }) {
     setProfile(null);
   }, []);
 
+  // Merges a partial update (e.g. after a rename or avatar upload) into the
+  // active profile so the navbar/UI reflect it immediately without needing
+  // to re-select the profile.
+  const updateProfile = useCallback((patch) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      localStorage.setItem('fs_profile', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ token, profile, login, register, logout, chooseProfile, switchProfile, isAuthed: !!token, hasProfile: !!profile }}
+      value={{
+        token,
+        profile,
+        login,
+        register,
+        logout,
+        chooseProfile,
+        switchProfile,
+        updateProfile,
+        isAuthed: !!token,
+        hasProfile: !!profile,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -34,6 +34,26 @@ export const api = {
   listProfiles: () => request('/profiles'),
   createProfile: (data) => request('/profiles', { method: 'POST', body: JSON.stringify(data) }),
   selectProfile: (id, pin) => request(`/profiles/${id}/select`, { method: 'POST', body: JSON.stringify({ pin }) }),
+  renameProfile: (id, name) => request(`/profiles/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+  uploadAvatar: (id, file) => {
+    const form = new FormData();
+    form.append('avatar', file);
+    return request(`/profiles/${id}/avatar`, { method: 'POST', body: form });
+  },
+  // `version` (pass the profile's avatarPath, which changes to a fresh
+  // filename on every upload) cache-busts the <img> so a replaced photo
+  // shows up immediately instead of the browser serving the old cached one.
+  avatarUrl: (id, version) => {
+    const params = new URLSearchParams({ token: localStorage.getItem('fs_token') || '' });
+    if (version) params.set('v', version);
+    return `${BASE}/profiles/${id}/avatar?${params.toString()}`;
+  },
+
+  listFriends: () => request('/friends'),
+  sendFriendRequest: (email) => request('/friends/request', { method: 'POST', body: JSON.stringify({ email }) }),
+  acceptFriend: (id) => request(`/friends/${id}/accept`, { method: 'POST' }),
+  declineFriend: (id) => request(`/friends/${id}/decline`, { method: 'POST' }),
+  removeFriend: (id) => request(`/friends/${id}`, { method: 'DELETE' }),
 
   listMedia: (params = {}) => {
     const qs = new URLSearchParams(params).toString();

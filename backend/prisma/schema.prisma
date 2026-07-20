@@ -47,6 +47,7 @@ model Profile {
   id          String     @id @default(uuid())
   name        String
   avatarColor String     @default("#E50914")
+  avatarPath  String?    // uploaded profile photo filename; falls back to the color+initial avatar when unset
   isKid       Boolean    @default(false)
   pinHash     String?    // optional PIN for kid/locked profiles
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)

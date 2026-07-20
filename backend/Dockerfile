@@ -16,7 +16,7 @@ COPY src ./src
 
 # Uploads live here; mount a volume over this path in docker-compose so
 # media survives container rebuilds.
-RUN mkdir -p /app/src/uploads/originals /app/src/uploads/transcoded /app/src/uploads/thumbnails
+RUN mkdir -p /app/src/uploads/originals /app/src/uploads/transcoded /app/src/uploads/thumbnails /app/src/uploads/avatars
 
 # SQLite file lives in its own volume-mounted directory, separate from the
 # app code layer, so `docker compose build` never touches your data.

@@ -8,6 +8,7 @@ import Watch from './pages/Watch.jsx';
 import Upload from './pages/Upload.jsx';
 import Search from './pages/Search.jsx';
 import Settings from './pages/Settings.jsx';
+import Friends from './pages/Friends.jsx';
 
 function RequireAuth({ children }) {
   const { isAuthed } = useAuth();
@@ -70,6 +71,14 @@ export default function App() {
         element={
           <RequireProfile>
             <Settings />
+          </RequireProfile>
+        }
+      />
+      <Route
+        path="/friends"
+        element={
+          <RequireProfile>
+            <Friends />
           </RequireProfile>
         }
       />

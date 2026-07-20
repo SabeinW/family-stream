@@ -5,4 +5,5 @@ prisma/dev.db-journal
 src/uploads/originals/*
 src/uploads/transcoded/*
 src/uploads/thumbnails/*
+src/uploads/avatars/*
 !src/uploads/**/.gitkeep

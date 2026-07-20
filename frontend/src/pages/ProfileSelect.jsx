@@ -51,10 +51,14 @@ export default function ProfileSelect() {
     return (
       <div className="min-h-screen bg-base-950 flex flex-col items-center justify-center px-4">
         <div
-          className="w-24 h-24 rounded-xl flex items-center justify-center text-3xl font-bold mb-6"
+          className="w-24 h-24 rounded-xl flex items-center justify-center text-3xl font-bold mb-6 overflow-hidden"
           style={{ backgroundColor: pinPrompt.avatarColor }}
         >
-          {pinPrompt.name[0].toUpperCase()}
+          {pinPrompt.avatarPath ? (
+            <img src={api.avatarUrl(pinPrompt.id, pinPrompt.avatarPath)} alt="" className="w-full h-full object-cover" />
+          ) : (
+            pinPrompt.name[0].toUpperCase()
+          )}
         </div>
         <h2 className="text-xl font-semibold mb-4">Enter PIN for {pinPrompt.name}</h2>
         <input
@@ -94,10 +98,14 @@ export default function ProfileSelect() {
             className="flex flex-col items-center gap-3 group"
           >
             <div
-              className="w-28 h-28 md:w-32 md:h-32 rounded-xl flex items-center justify-center text-4xl font-bold relative ring-2 ring-transparent group-hover:ring-white transition-all"
+              className="w-28 h-28 md:w-32 md:h-32 rounded-xl flex items-center justify-center text-4xl font-bold relative ring-2 ring-transparent group-hover:ring-white transition-all overflow-hidden"
               style={{ backgroundColor: p.avatarColor }}
             >
-              {p.name[0].toUpperCase()}
+              {p.avatarPath ? (
+                <img src={api.avatarUrl(p.id, p.avatarPath)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                p.name[0].toUpperCase()
+              )}
               {p.hasPin && <Lock className="w-5 h-5 absolute bottom-2 right-2 opacity-80" />}
             </div>
             <span className="text-white/70 group-hover:text-white transition-colors">{p.name}</span>
