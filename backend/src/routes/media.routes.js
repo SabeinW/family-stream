@@ -162,6 +162,81 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json(media);
 });
 
+// PATCH /api/media/bulk-visibility  { mediaIds: string[], visibility, shareWith? }
+// Applies the same visibility to several items at once — e.g. selecting
+// several items in a playlist and setting sharing in one action. Must be
+// registered before PATCH /:id below, or Express would match this request
+// against that route first, treating "bulk-visibility" as an :id value.
+// Silently skips any id the requester doesn't own rather than erroring the
+// whole batch over one item that isn't theirs (a playlist can contain
+// items its owner doesn't own, added because they had view access).
+router.patch('/bulk-visibility', requireAuth, async (req, res) => {
+  const { mediaIds, visibility, shareWith } = req.body;
+  if (!Array.isArray(mediaIds) || mediaIds.length === 0) {
+    return res.status(400).json({ error: 'mediaIds is required.' });
+  }
+  if (!VALID_VISIBILITIES.includes(visibility)) {
+    return res.status(400).json({ error: 'Invalid visibility value.' });
+  }
+
+  const owned = await prisma.media.findMany({
+    where: { id: { in: [...new Set(mediaIds)] }, ownerId: req.user.userId },
+    select: { id: true, title: true },
+  });
+  const ownedIds = owned.map((m) => m.id);
+  const skipped = mediaIds.filter((id) => !ownedIds.includes(id));
+  if (ownedIds.length === 0) {
+    return res.status(404).json({ error: "None of the selected items are yours to edit." });
+  }
+
+  let targetUserIds = [];
+  if (visibility === 'custom') {
+    const requested = Array.isArray(shareWith) ? [...new Set(shareWith)] : [];
+    const friendIds = await getFriendIds(req.user.userId);
+    if (requested.some((id) => !friendIds.includes(id))) {
+      return res.status(400).json({ error: 'Can only share with current friends.' });
+    }
+    targetUserIds = requested;
+  }
+
+  const previousShares = await prisma.mediaShare.findMany({
+    where: { mediaId: { in: ownedIds } },
+    select: { mediaId: true, userId: true },
+  });
+  const previouslySharedByMedia = new Map();
+  for (const s of previousShares) {
+    if (!previouslySharedByMedia.has(s.mediaId)) previouslySharedByMedia.set(s.mediaId, new Set());
+    previouslySharedByMedia.get(s.mediaId).add(s.userId);
+  }
+
+  // Same clear-then-recreate pattern as the single-item version, and for
+  // the same reason: every transition clears old shares, not just ones
+  // landing on "custom", so custom -> private -> custom can't resurrect
+  // stale grants.
+  await prisma.$transaction([
+    prisma.mediaShare.deleteMany({ where: { mediaId: { in: ownedIds } } }),
+    prisma.media.updateMany({ where: { id: { in: ownedIds } }, data: { visibility } }),
+    ...(targetUserIds.length
+      ? [
+          prisma.mediaShare.createMany({
+            data: ownedIds.flatMap((mediaId) => targetUserIds.map((userId) => ({ mediaId, userId }))),
+          }),
+        ]
+      : []),
+  ]);
+
+  for (const media of owned) {
+    const already = previouslySharedByMedia.get(media.id) || new Set();
+    for (const userId of targetUserIds) {
+      if (!already.has(userId)) {
+        notify(userId, 'media_shared', `${req.user.email} shared "${media.title}" with you.`, `/watch/${media.id}`);
+      }
+    }
+  }
+
+  res.json({ updated: ownedIds, skipped });
+});
+
 // PATCH /api/media/:id  { title?, description?, category?, tags?, takenAt? }
 router.patch('/:id', requireAuth, async (req, res) => {
   const media = await prisma.media.findUnique({ where: { id: req.params.id } });

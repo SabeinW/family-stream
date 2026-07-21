@@ -110,6 +110,8 @@ export const api = {
     request(`/media/${id}/progress`, { method: 'PUT', body: JSON.stringify({ positionSec }) }),
   upload: (formData) => request('/media/upload', { method: 'POST', body: formData }),
   updateVisibility: (id, data) => request(`/media/${id}/visibility`, { method: 'PATCH', body: JSON.stringify(data) }),
+  bulkUpdateVisibility: (mediaIds, data) =>
+    request('/media/bulk-visibility', { method: 'PATCH', body: JSON.stringify({ mediaIds, ...data }) }),
   updateMedia: (id, data) => request(`/media/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMedia: (id) => request(`/media/${id}`, { method: 'DELETE' }),
 

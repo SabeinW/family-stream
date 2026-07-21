@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, X, Trash2, Loader2, Check, Search as SearchIcon, Pencil, UploadCloud, Library, Play } from 'lucide-react';
+import { Plus, X, Trash2, Loader2, Check, Search as SearchIcon, Pencil, UploadCloud, Library, Play, CheckSquare, Square } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import MediaCard from '../components/MediaCard.jsx';
 import Slideshow from '../components/Slideshow.jsx';
@@ -255,6 +255,117 @@ function AddMediaModal({ playlistId, existingIds, onClose, onAdded }) {
   );
 }
 
+function BulkShareModal({ mediaIds, onClose, onSaved }) {
+  const [visibility, setVisibility] = useState('private');
+  const [shareWith, setShareWith] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    api.listFriends().then((d) => setFriends(d.friends));
+  }, []);
+
+  const toggleFriend = (userId) => {
+    setShareWith((prev) => (prev.includes(userId) ? prev.filter((i) => i !== userId) : [...prev, userId]));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await api.bulkUpdateVisibility(mediaIds, {
+        visibility,
+        shareWith: visibility === 'custom' ? shareWith : undefined,
+      });
+      setResult(res);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-base-900 rounded-xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto scrollbar-hidden ring-1 ring-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-semibold">Set sharing</h3>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-xs text-white/50 mb-4">
+          {mediaIds.length} item{mediaIds.length === 1 ? '' : 's'} selected
+        </p>
+
+        <div className="flex flex-col gap-2 mb-3">
+          {VISIBILITY_OPTIONS.map((opt) => (
+            <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name="bulk-visibility"
+                checked={visibility === opt.id}
+                onChange={() => setVisibility(opt.id)}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+
+        {visibility === 'custom' && (
+          <div className="max-h-32 overflow-y-auto scrollbar-hidden space-y-1.5 mb-4 pl-1">
+            {friends.length === 0 ? (
+              <p className="text-white/40 text-xs">No friends yet.</p>
+            ) : (
+              friends.map((f) => (
+                <label key={f.userId} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={shareWith.includes(f.userId)} onChange={() => toggleFriend(f.userId)} />
+                  {f.username ? `@${f.username}` : f.email}
+                </label>
+              ))
+            )}
+          </div>
+        )}
+
+        {error && <p className="text-accent text-sm mb-3">{error}</p>}
+        {result && (
+          <p className="text-white/50 text-xs mb-3">
+            Updated {result.updated.length}
+            {result.skipped.length > 0 && ` — skipped ${result.skipped.length} you don't own`}.
+          </p>
+        )}
+
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-md hover:bg-white/10 text-sm">
+            {result ? 'Close' : 'Cancel'}
+          </button>
+          {!result && (
+            <button
+              onClick={save}
+              disabled={saving}
+              className="px-4 py-2 rounded-md bg-accent hover:bg-accent-dim font-semibold text-sm disabled:opacity-40"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function PlaylistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -265,6 +376,9 @@ export default function PlaylistDetail() {
   const [editing, setEditing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [slideshowIndex, setSlideshowIndex] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showBulkShare, setShowBulkShare] = useState(false);
   const [name, setName] = useState('');
   const [colorId, setColorId] = useState(THEMES[0].id);
   const [visibility, setVisibility] = useState('private');
@@ -327,6 +441,15 @@ export default function PlaylistDetail() {
     setShareWith((prev) => (prev.includes(userId) ? prev.filter((i) => i !== userId) : [...prev, userId]));
   };
 
+  const toggleSelect = (mediaId) => {
+    setSelectedIds((prev) => (prev.includes(mediaId) ? prev.filter((i) => i !== mediaId) : [...prev, mediaId]));
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds([]);
+  };
+
   if (!playlist) {
     return (
       <div className="min-h-screen bg-base-950 flex items-center justify-center">
@@ -359,6 +482,16 @@ export default function PlaylistDetail() {
                 <Play className="w-4 h-4 fill-black" /> Slideshow
               </button>
             )}
+            {isOwner && playlist.items.length > 0 && (
+              <button
+                onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                className={`flex items-center gap-2 transition-colors rounded-md px-4 py-2 text-sm font-semibold ${
+                  selectMode ? 'bg-white text-black hover:bg-white/85' : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                <CheckSquare className="w-4 h-4" /> {selectMode ? 'Cancel' : 'Select'}
+              </button>
+            )}
             {isOwner && (
               <>
                 <button
@@ -386,24 +519,85 @@ export default function PlaylistDetail() {
           </p>
         ) : (
           <div className="flex flex-wrap gap-4">
-            {playlist.items.map((m) => (
+            {playlist.items.map((m) => {
+              const selected = selectedIds.includes(m.id);
+              return (
               <div key={m.id} className="relative group">
                 <MediaCard media={m} />
-                {isOwner && (
+                {selectMode ? (
                   <button
-                    onClick={() => removeItem(m.id)}
-                    disabled={removingId === m.id}
-                    aria-label="Remove from playlist"
-                    className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity disabled:opacity-100"
+                    onClick={() => toggleSelect(m.id)}
+                    aria-label={selected ? 'Deselect' : 'Select'}
+                    className={`absolute inset-0 rounded-lg transition-colors ${
+                      selected ? 'bg-accent/30 ring-2 ring-accent' : 'bg-black/10 hover:bg-black/30'
+                    }`}
                   >
-                    {removingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    <span
+                      className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        selected ? 'bg-accent border-accent' : 'border-white bg-black/40'
+                      }`}
+                    >
+                      {selected && <Check className="w-3 h-3" />}
+                    </span>
                   </button>
+                ) : (
+                  isOwner && (
+                    <button
+                      onClick={() => removeItem(m.id)}
+                      disabled={removingId === m.id}
+                      aria-label="Remove from playlist"
+                      className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity disabled:opacity-100"
+                    >
+                      {removingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  )
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectMode && selectedIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-4 inset-x-0 z-40 flex justify-center px-4"
+          >
+            <div className="flex items-center gap-3 bg-base-900 ring-1 ring-white/10 shadow-card rounded-full px-4 py-2.5">
+              <span className="text-sm font-medium">{selectedIds.length} selected</span>
+              <button
+                onClick={() => setShowBulkShare(true)}
+                className="flex items-center gap-1.5 bg-accent hover:bg-accent-dim transition-colors rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide"
+              >
+                Set sharing
+              </button>
+              <button
+                onClick={() => setSelectedIds([])}
+                className="text-xs text-white/50 hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBulkShare && (
+          <BulkShareModal
+            mediaIds={selectedIds}
+            onClose={() => setShowBulkShare(false)}
+            onSaved={() => {
+              load();
+              exitSelectMode();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {slideshowIndex !== null && (
