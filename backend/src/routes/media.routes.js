@@ -162,6 +162,29 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json(media);
 });
 
+// PATCH /api/media/:id  { title?, description?, category?, tags?, takenAt? }
+router.patch('/:id', requireAuth, async (req, res) => {
+  const media = await prisma.media.findUnique({ where: { id: req.params.id } });
+  // Same as delete: owner-only, even for legacy ownerId=NULL rows.
+  if (!media || media.ownerId !== req.user.userId) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
+
+  const { title, description, category, tags, takenAt } = req.body;
+  const data = {};
+  if (title !== undefined) {
+    if (!title.trim()) return res.status(400).json({ error: 'Title cannot be empty.' });
+    data.title = title.trim();
+  }
+  if (description !== undefined) data.description = description.trim() || null;
+  if (category !== undefined) data.category = category.trim() || 'Uncategorized';
+  if (tags !== undefined) data.tags = tags;
+  if (takenAt !== undefined) data.takenAt = takenAt ? new Date(takenAt) : null;
+
+  const updated = await prisma.media.update({ where: { id: media.id }, data });
+  res.json(updated);
+});
+
 router.delete('/:id', requireAuth, async (req, res) => {
   const media = await prisma.media.findUnique({
     where: { id: req.params.id },

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, Volume2, VolumeX, RotateCcw, RotateCw,
-  Maximize, Minimize, ArrowLeft, Settings, X, Download, Share2,
+  Maximize, Minimize, ArrowLeft, Settings, X, Download, Share2, Pencil,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -17,7 +17,7 @@ function formatTime(sec) {
   return h ? `${h}:${mm}:${String(s).padStart(2, '0')}` : `${mm}:${String(s).padStart(2, '0')}`;
 }
 
-export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwner = false, onDeleted, onShareClick }) {
+export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwner = false, onDeleted, onShareClick, onEditClick }) {
   const videoRef = useRef(null);
   const wrapperRef = useRef(null);
   const controlsTimeout = useRef(null);
@@ -217,6 +217,9 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwn
                 </a>
                 {isOwner && (
                   <>
+                    <button onClick={onEditClick} aria-label="Edit details" className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                      <Pencil className="w-5 h-5" />
+                    </button>
                     <button onClick={onShareClick} aria-label="Share" className="p-2 rounded-full hover:bg-white/10 transition-colors">
                       <Share2 className="w-5 h-5" />
                     </button>

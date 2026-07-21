@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Download, Share2, X } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Pencil, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext.jsx';
 import VideoPlayer from '../components/VideoPlayer.jsx';
 import DeleteMediaButton from '../components/DeleteMediaButton.jsx';
 import ShareControl from '../components/ShareControl.jsx';
+import EditMediaControl from '../components/EditMediaControl.jsx';
 
 export default function Watch() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function Watch() {
   const [media, setMedia] = useState(null);
   const [theater, setTheater] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
     api.getMedia(id).then(setMedia);
@@ -67,6 +69,7 @@ export default function Watch() {
             isOwner={media.ownerId === user?.id}
             onDeleted={() => navigate('/')}
             onShareClick={() => setShowShare(true)}
+            onEditClick={() => setShowEdit(true)}
           />
         ) : (
           <>
@@ -88,6 +91,13 @@ export default function Watch() {
                 </a>
                 {media.ownerId === user?.id && (
                   <>
+                    <button
+                      onClick={() => setShowEdit(true)}
+                      aria-label="Edit details"
+                      className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                      <Pencil className="w-5 h-5" />
+                    </button>
                     <button
                       onClick={() => setShowShare(true)}
                       aria-label="Share"
@@ -129,6 +139,35 @@ export default function Watch() {
                 <X className="w-5 h-5" />
               </button>
               <ShareControl mediaId={media.id} isOwner={media.ownerId === user?.id} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showEdit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            onClick={() => setShowEdit(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto scrollbar-hidden bg-base-900 rounded-xl ring-1 ring-white/10 shadow-card p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowEdit(false)}
+                aria-label="Close"
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <EditMediaControl media={media} onSaved={(updated) => setMedia((m) => ({ ...m, ...updated }))} />
             </motion.div>
           </motion.div>
         )}
