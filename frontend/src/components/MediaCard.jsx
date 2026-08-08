@@ -22,7 +22,7 @@ export default function MediaCard({ media, size = 'md' }) {
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       className={`relative flex-shrink-0 ${widths[size]} text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg`}
     >
-      <div className="relative aspect-video rounded-lg overflow-hidden bg-base-800 shadow-card ring-1 ring-white/5">
+      <div className="relative aspect-video rounded-lg overflow-hidden bg-base-800 shadow-card ring-1 ring-white/5 group-hover:ring-accent/40 group-hover:shadow-glow transition-shadow duration-300">
         {media.thumbnailPath ? (
           <img
             src={api.thumbnailUrl(media.id)}

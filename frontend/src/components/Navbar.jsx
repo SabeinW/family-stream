@@ -36,28 +36,28 @@ export default function Navbar() {
           <button
             aria-label="Search"
             onClick={() => navigate('/search')}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
           >
             <Search className="w-5 h-5" />
           </button>
           <button
             aria-label="Upload media"
             onClick={() => navigate('/upload')}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
           >
             <UploadCloud className="w-5 h-5" />
           </button>
           <button
             aria-label="Playlists"
             onClick={() => navigate('/playlists')}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
           >
             <ListVideo className="w-5 h-5" />
           </button>
           <button
             aria-label="Friends"
             onClick={() => navigate('/friends')}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
           >
             <Users className="w-5 h-5" />
           </button>
@@ -65,7 +65,7 @@ export default function Navbar() {
           <button
             aria-label="Settings"
             onClick={() => navigate('/settings')}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
           >
             <Settings className="w-5 h-5" />
           </button>

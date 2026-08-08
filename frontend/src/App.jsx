@@ -1,5 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useAuth } from './context/AuthContext.jsx';
 import Login from './pages/Login.jsx';
 import ProfileSelect from './pages/ProfileSelect.jsx';
@@ -24,83 +25,105 @@ function RequireProfile({ children }) {
   return children;
 }
 
-export default function App() {
+// Every navigation crosses through this — a deliberately quiet opacity-only
+// fade (no y/scale) so it never fights with the fixed-positioned navbars and
+// top bars every page renders. A transform-based fade would create a new
+// containing block for those `position: fixed` children, silently breaking
+// them for the transition's duration.
+function PageTransition({ children }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/profiles"
-        element={
-          <RequireAuth>
-            <ProfileSelect />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <RequireProfile>
-            <Dashboard />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <RequireProfile>
-            <Search />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/watch/:id"
-        element={
-          <RequireProfile>
-            <Watch />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/upload"
-        element={
-          <RequireProfile>
-            <Upload />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <RequireProfile>
-            <Settings />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/friends"
-        element={
-          <RequireProfile>
-            <Friends />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/playlists"
-        element={
-          <RequireProfile>
-            <Playlists />
-          </RequireProfile>
-        }
-      />
-      <Route
-        path="/playlists/:id"
-        element={
-          <RequireProfile>
-            <PlaylistDetail />
-          </RequireProfile>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export default function App() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route
+          path="/profiles"
+          element={
+            <RequireAuth>
+              <PageTransition><ProfileSelect /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <RequireProfile>
+              <PageTransition><Dashboard /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <RequireProfile>
+              <PageTransition><Search /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/watch/:id"
+          element={
+            <RequireProfile>
+              <PageTransition><Watch /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <RequireProfile>
+              <PageTransition><Upload /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireProfile>
+              <PageTransition><Settings /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <RequireProfile>
+              <PageTransition><Friends /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/playlists"
+          element={
+            <RequireProfile>
+              <PageTransition><Playlists /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/playlists/:id"
+          element={
+            <RequireProfile>
+              <PageTransition><PlaylistDetail /></PageTransition>
+            </RequireProfile>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
   );
 }

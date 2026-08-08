@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Film, UploadCloud } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
 import Hero from '../components/Hero.jsx';
 import Carousel from '../components/Carousel.jsx';
@@ -38,6 +40,7 @@ function oneYearAgoRange() {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [media, setMedia] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [playlists, setPlaylists] = useState([]);
@@ -92,9 +95,37 @@ export default function Dashboard() {
       <PullToRefresh onRefresh={load}>
         <div className="min-h-screen bg-base-950">
           <Navbar />
-          <div className="pt-32 text-center text-white/60 px-4">
-            <p className="text-lg">No media yet — upload your first family memory to get started.</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
+          >
+            <div className="relative mb-6">
+              <div
+                className="absolute inset-0 rounded-full blur-2xl opacity-40"
+                style={{ backgroundColor: 'rgb(var(--accent-rgb))' }}
+                aria-hidden="true"
+              />
+              <div
+                className="relative w-20 h-20 rounded-full flex items-center justify-center ring-1 ring-white/10"
+                style={{ backgroundImage: 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.3), rgb(var(--accent-glow-rgb) / 0.15))' }}
+              >
+                <Film className="w-9 h-9 text-white" />
+              </div>
+            </div>
+            <p className="text-accent font-semibold tracking-widest text-xs uppercase mb-3">No memories yet</p>
+            <h1 className="font-display text-3xl md:text-4xl tracking-wide mb-3">Add your first photo or video</h1>
+            <p className="text-white/50 text-sm max-w-sm mb-8">
+              Everything you upload stays private until you decide to share it with family or friends.
+            </p>
+            <button
+              onClick={() => navigate('/upload')}
+              className="flex items-center gap-2 bg-accent hover:bg-accent-dim transition-colors rounded-md px-6 py-3 font-semibold"
+            >
+              <UploadCloud className="w-5 h-5" /> Upload a memory
+            </button>
+          </motion.div>
         </div>
       </PullToRefresh>
     );
