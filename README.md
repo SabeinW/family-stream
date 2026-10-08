@@ -31,7 +31,8 @@ family-stream/
     ├── vite.config.js          vite-plugin-pwa (manifest + service worker)
     ├── public/
     │   ├── manifest.json       Standalone app manifest
-    │   └── icons/              App icons (192/512/apple-touch, placeholders included)
+    │   ├── brand/app-icon.svg  Master app-icon artwork (source for every PNG icon)
+    │   └── icons/              App icons (192/512/apple-touch + favicons)
     └── src/
         ├── App.jsx             Routes + auth/profile guards
         ├── context/AuthContext.jsx
@@ -81,7 +82,7 @@ The Vite dev server proxies `/api` to `http://localhost:4000` (see `vite.config.
 - **Android**: open in Chrome → menu → **Install app** (or you'll see an automatic install prompt), powered by `manifest.json` + the service worker registered via `vite-plugin-pwa`.
 
 ### Replacing the placeholder app icon
-Programmatically generated placeholder icons are included at `frontend/public/icons/` (192, 512, and iOS touch-icon sizes) so the app is installable out of the box. Swap them for your own artwork at the same filenames/sizes — no other config changes are needed.
+The branded icon set lives at `frontend/public/icons/` (192, 512, iOS touch-icon sizes, favicons), all rendered from `frontend/public/brand/app-icon.svg`. See [`docs/DESIGN.md`](docs/DESIGN.md) for the design research, brand and design system, and how to re-export icons.
 
 ## One-command deploy with Docker Compose
 

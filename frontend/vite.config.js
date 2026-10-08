@@ -7,13 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.ico'],
+      includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.ico', 'icons/favicon.svg'],
       manifest: {
         name: 'FamilyStream',
         short_name: 'FamilyStream',
         description: 'Our private family streaming and photo library.',
-        theme_color: '#040404',
-        background_color: '#000000',
+        theme_color: '#030308',
+        background_color: '#030308',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',

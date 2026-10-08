@@ -386,4 +386,39 @@ router.put('/:id/progress', requireProfile, async (req, res) => {
   res.json(progress);
 });
 
+// GET /api/media/profile/continue-watching
+// Videos this profile started but didn't finish, most recently watched first,
+// each with its saved `positionSec` — powers the "Continue Watching" row.
+// "Started" means past the first 10s; "finished" means within the last 5%
+// (or 30s), so credits/outros don't keep a video stuck in the row.
+router.get('/profile/continue-watching', requireProfile, async (req, res) => {
+  const { profileId, userId } = req.profile;
+  const rows = await prisma.watchProgress.findMany({
+    where: { profileId, positionSec: { gt: 10 } },
+    include: { media: true },
+    orderBy: { updatedAt: 'desc' },
+    take: 40,
+  });
+  const items = [];
+  for (const row of rows) {
+    const { media } = row;
+    if (!media || media.type !== 'video' || media.status !== 'ready') continue;
+    const duration = media.durationSec || 0;
+    if (duration && row.positionSec >= Math.min(duration * 0.95, duration - 30)) continue;
+    if (!(await canAccessMedia(userId, media))) continue;
+    items.push({ ...media, positionSec: row.positionSec });
+    if (items.length >= 20) break;
+  }
+  res.json(items);
+});
+
+// GET /api/media/:id/progress — this profile's saved position, for resuming.
+router.get('/:id/progress', requireProfile, async (req, res) => {
+  const { profileId } = req.profile;
+  const progress = await prisma.watchProgress.findUnique({
+    where: { profileId_mediaId: { profileId, mediaId: req.params.id } },
+  });
+  res.json({ positionSec: progress?.positionSec || 0 });
+});
+
 module.exports = router;

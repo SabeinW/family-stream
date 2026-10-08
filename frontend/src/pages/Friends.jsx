@@ -74,8 +74,8 @@ export default function Friends() {
   return (
     <div className="min-h-screen bg-base-950 pb-20">
       <Navbar />
-      <div className="pt-28 px-4 md:px-10 max-w-2xl">
-        <h1 className="font-display text-3xl tracking-wide mb-1">Friends</h1>
+      <div className="pt-24 md:pt-28 px-4 md:px-12 max-w-2xl">
+        <h1 className="font-display font-bold text-3xl tracking-tight mb-1">Friends</h1>
         <p className="text-white/50 text-sm mb-8">
           Add family and friends by email or @username — you'll be able to share media and playlists with them.
         </p>

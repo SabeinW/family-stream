@@ -462,12 +462,12 @@ export default function PlaylistDetail() {
     <div className="min-h-screen bg-base-950 pb-20">
       <Navbar />
       <div
-        className="pt-28 pb-10 px-4 md:px-10"
+        className="pt-24 md:pt-28 pb-10 px-4 md:px-12"
         style={{ backgroundImage: `linear-gradient(180deg, rgb(${playlist.coverColor} / 0.25), transparent 70%)` }}
       >
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-display text-3xl md:text-4xl tracking-wide mb-1">{playlist.name}</h1>
+            <h1 className="font-display font-bold text-3xl md:text-4xl tracking-tight mb-1">{playlist.name}</h1>
             <p className="text-white/50 text-sm">
               {playlist.items.length} {playlist.items.length === 1 ? 'item' : 'items'}
               {playlist.hiddenCount > 0 && ` · ${playlist.hiddenCount} not visible to you`}
@@ -512,7 +512,7 @@ export default function PlaylistDetail() {
         </div>
       </div>
 
-      <div className="px-4 md:px-10">
+      <div className="px-4 md:px-12">
         {playlist.items.length === 0 ? (
           <p className="text-white/40 text-sm">
             {isOwner ? 'No items yet — click "Add media" to get started.' : 'Nothing to show here yet.'}

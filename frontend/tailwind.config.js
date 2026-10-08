@@ -20,14 +20,19 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Bebas Neue"', 'Archivo Black', 'sans-serif'],
+        // Inter Tight for titles/wordmark: a tighter-set, heavier cut of the UI
+        // face, closer to the bespoke sans the big streamers use than a
+        // condensed poster font.
+        display: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
+        // Both fades end on base-950 so the billboard dissolves into the page
+        // instead of stopping at a visible edge.
         'hero-fade':
-          'linear-gradient(180deg, rgba(4,4,4,0) 0%, rgba(4,4,4,0.4) 55%, rgba(4,4,4,1) 100%)',
+          'linear-gradient(180deg, rgba(3,3,8,0) 0%, rgba(3,3,8,0.15) 45%, rgba(3,3,8,0.75) 78%, rgba(3,3,8,1) 100%)',
         'hero-side':
-          'linear-gradient(90deg, rgba(4,4,4,0.95) 0%, rgba(4,4,4,0.2) 50%, rgba(4,4,4,0.7) 100%)',
+          'linear-gradient(90deg, rgba(3,3,8,0.92) 0%, rgba(3,3,8,0.55) 32%, rgba(3,3,8,0) 62%)',
       },
       boxShadow: {
         card: '0 10px 30px -10px rgba(0,0,0,0.7)',
@@ -38,9 +43,19 @@ export default {
           '0%': { backgroundPosition: '-500px 0' },
           '100%': { backgroundPosition: '500px 0' },
         },
+        // Slow "Ken Burns" push-in on billboard artwork.
+        kenburns: {
+          '0%': { transform: 'scale(1.0)' },
+          '100%': { transform: 'scale(1.08)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 1.6s linear infinite',
+        kenburns: 'kenburns 12s ease-out forwards',
+      },
+      transitionTimingFunction: {
+        // The app's single "premium" curve: fast start, long soft landing.
+        cinema: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

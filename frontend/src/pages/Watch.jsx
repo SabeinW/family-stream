@@ -18,8 +18,25 @@ export default function Watch() {
   const [showShare, setShowShare] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
+  const [startAt, setStartAt] = useState(0);
+
+  // Load the item and this profile's saved position together, so the player
+  // mounts already knowing where to resume (no visible jump from 0:00).
+  // Near-finished videos start over, matching the Continue Watching cutoff.
   useEffect(() => {
-    api.getMedia(id).then(setMedia);
+    let cancelled = false;
+    Promise.all([api.getMedia(id), api.getProgress(id).catch(() => ({ positionSec: 0 }))]).then(
+      ([m, { positionSec }]) => {
+        if (cancelled) return;
+        const duration = m.durationSec || 0;
+        const finished = duration && positionSec >= Math.min(duration * 0.95, duration - 30);
+        setStartAt(m.type === 'video' && positionSec > 10 && !finished ? positionSec : 0);
+        setMedia(m);
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Theater mode dims everything outside the player and locks background
@@ -65,6 +82,7 @@ export default function Watch() {
         {media.type === 'video' ? (
           <VideoPlayer
             media={media}
+            startAt={startAt}
             onTheaterChange={handleTheaterChange}
             isOwner={media.ownerId === user?.id}
             onDeleted={() => navigate('/')}

@@ -66,11 +66,11 @@ export default function NotificationBell() {
       <button
         aria-label="Notifications"
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-full text-white/90 hover:text-accent hover:bg-accent/15 transition-colors"
+        className="relative p-2 rounded-full text-white/90 hover:bg-white/10 transition-colors"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-gradient-to-br from-accent to-accent-glow ring-2 ring-base-950 text-[10px] font-bold flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -83,9 +83,9 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto scrollbar-hidden bg-base-900 rounded-xl ring-1 ring-white/10 shadow-card z-50"
+            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto scrollbar-hidden glass rounded-xl ring-1 ring-white/10 shadow-card z-50"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 sticky top-0 bg-base-900">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 sticky top-0 glass">
               <p className="font-semibold text-sm">Notifications</p>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-xs text-accent hover:underline flex items-center gap-1">

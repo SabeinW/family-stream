@@ -7,28 +7,26 @@ import Hero from '../components/Hero.jsx';
 import Carousel from '../components/Carousel.jsx';
 import PlaylistCover from '../components/PlaylistCover.jsx';
 import PullToRefresh from '../components/PullToRefresh.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../lib/api';
 
-function PlaylistRow({ playlists }) {
+const FEATURED_COUNT = 5;
+
+function PlaylistTile({ playlist }) {
   const navigate = useNavigate();
-  if (!playlists.length) return null;
   return (
-    <section className="relative mb-10 px-4 md:px-10">
-      <h2 className="text-lg md:text-xl font-semibold mb-3">Your Playlists</h2>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hidden scroll-smooth pb-2">
-        {playlists.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => navigate(`/playlists/${p.id}`)}
-            className="flex-shrink-0 w-44 md:w-56 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg"
-          >
-            <PlaylistCover coverColor={p.coverColor} thumbnails={p.coverThumbnails} />
-            <p className="mt-1.5 text-sm text-white/90 truncate">{p.name}</p>
-            <p className="text-xs text-white/40">{p.itemCount} {p.itemCount === 1 ? 'item' : 'items'}</p>
-          </button>
-        ))}
+    <button
+      onClick={() => navigate(`/playlists/${playlist.id}`)}
+      className="flex-shrink-0 snap-start w-56 md:w-64 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg"
+    >
+      <div className="rounded-lg overflow-hidden ring-1 ring-white/[0.06] shadow-card transition duration-300 ease-cinema group-hover:-translate-y-1 group-hover:ring-white/20">
+        <PlaylistCover coverColor={playlist.coverColor} thumbnails={playlist.coverThumbnails} />
       </div>
-    </section>
+      <p className="mt-2 text-sm font-semibold text-white/90 truncate">{playlist.name}</p>
+      <p className="text-xs text-white/45">
+        {playlist.itemCount} {playlist.itemCount === 1 ? 'item' : 'items'}
+      </p>
+    </button>
   );
 }
 
@@ -39,31 +37,86 @@ function oneYearAgoRange() {
   return [start, end];
 }
 
+// Billboard picks: items with artwork, videos first (they can preview),
+// shuffled so the home screen feels fresh on every visit.
+function pickFeatured(media) {
+  const withArt = media.filter((m) => m.thumbnailPath);
+  const shuffle = (arr) => arr.map((m) => [Math.random(), m]).sort((a, b) => a[0] - b[0]).map(([, m]) => m);
+  const videos = shuffle(withArt.filter((m) => m.type === 'video'));
+  const photos = shuffle(withArt.filter((m) => m.type !== 'video'));
+  const picks = [...videos, ...photos].slice(0, FEATURED_COUNT);
+  return picks.length ? picks : media.slice(0, 1);
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-base-950" aria-busy="true" aria-label="Loading">
+      <div className="h-[60vh] md:h-[85vh] skeleton" />
+      <div className="-mt-24 relative px-4 md:px-12 space-y-10">
+        {[0, 1, 2].map((row) => (
+          <div key={row}>
+            <div className="h-5 w-40 rounded skeleton mb-4" />
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-56 md:w-64 aspect-video rounded-lg skeleton" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [media, setMedia] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [playlists, setPlaylists] = useState([]);
-  const [spotlight, setSpotlight] = useState(null);
+  const [continueWatching, setContinueWatching] = useState([]);
+  const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [all, favs, lists] = await Promise.all([
+    const [all, favs, lists, resume] = await Promise.all([
       api.listMedia(),
       api.favorites().catch(() => []),
       api.listPlaylists().catch(() => []),
+      api.continueWatching().catch(() => []),
     ]);
     setMedia(all);
     setFavorites(favs);
     setPlaylists(lists);
-    if (all.length) setSpotlight(all[Math.floor(Math.random() * all.length)]);
+    setContinueWatching(resume);
+    setFeatured(pickFeatured(all));
   }, []);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
 
-  const recent = useMemo(() => [...media].slice(0, 20), [media]);
+  const favoriteIds = useMemo(() => new Set(favorites.map((f) => f.id)), [favorites]);
+
+  // Optimistic My List toggle — flips immediately, rolls back on failure.
+  const toggleFavorite = useCallback(
+    async (item) => {
+      const had = favoriteIds.has(item.id);
+      setFavorites((prev) => (had ? prev.filter((f) => f.id !== item.id) : [item, ...prev]));
+      try {
+        await api.toggleFavorite(item.id);
+      } catch {
+        setFavorites((prev) => (had ? [item, ...prev] : prev.filter((f) => f.id !== item.id)));
+      }
+    },
+    [favoriteIds]
+  );
+
+  const recent = useMemo(() => media.slice(0, 20), [media]);
+  const newThisWeek = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return media.filter((m) => new Date(m.createdAt).getTime() > weekAgo);
+  }, [media]);
   const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
   const photos = useMemo(() => media.filter((m) => m.type === 'photo'), [media]);
   const vacations = useMemo(() => media.filter((m) => /vacation/i.test(m.category)), [media]);
@@ -82,13 +135,7 @@ export default function Dashboard() {
     return map;
   }, [media]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-base-950 flex items-center justify-center">
-        <div className="w-16 h-16 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   if (!media.length) {
     return (
@@ -115,7 +162,7 @@ export default function Dashboard() {
               </div>
             </div>
             <p className="text-accent font-semibold tracking-widest text-xs uppercase mb-3">No memories yet</p>
-            <h1 className="font-display text-3xl md:text-4xl tracking-wide mb-3">Add your first photo or video</h1>
+            <h1 className="font-display font-bold text-3xl md:text-4xl tracking-tight mb-3">Add your first photo or video</h1>
             <p className="text-white/50 text-sm max-w-sm mb-8">
               Everything you upload stays private until you decide to share it with family or friends.
             </p>
@@ -135,21 +182,32 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={load}>
       <div className="min-h-screen bg-base-950 pb-20">
         <Navbar />
-        <Hero media={spotlight} />
+        <Hero items={featured} favoriteIds={favoriteIds} onToggleFavorite={toggleFavorite} />
 
-        <div className="-mt-16 relative z-10">
-          <PlaylistRow playlists={playlists} />
-          <Carousel title="Trending Family Moments" items={recent} />
-          {favorites.length > 0 && <Carousel title="Your Favorites" items={favorites} />}
-          {memoriesAYearAgo.length > 0 && <Carousel title="Memories from 1 Year Ago" items={memoriesAYearAgo} />}
-          <Carousel title="Recent Videos" items={videos.slice(0, 20)} />
+        {/* Rows tuck up into the billboard's fade on desktop, Netflix-style. */}
+        <div className="relative z-10 md:-mt-[14vh]">
+          {continueWatching.length > 0 && (
+            <Carousel title={`Continue Watching for ${profile?.name || 'you'}`} items={continueWatching} />
+          )}
+          {newThisWeek.length > 0 && <Carousel title="New This Week" items={newThisWeek} />}
+          {favorites.length > 0 && <Carousel title="My List" items={favorites} />}
+          {memoriesAYearAgo.length > 0 && <Carousel title="On This Day, 1 Year Ago" items={memoriesAYearAgo} size="lg" />}
+          <Carousel title="Recently Added" items={recent} />
+          {playlists.length > 0 && (
+            <Carousel title="Your Playlists" to="/playlists">
+              {playlists.map((p) => (
+                <PlaylistTile key={p.id} playlist={p} />
+              ))}
+            </Carousel>
+          )}
+          <Carousel title="Videos" items={videos.slice(0, 20)} to="/search?type=video" />
           {vacations.length > 0 && <Carousel title="Vacations" items={vacations} size="lg" />}
-          <Carousel title="Photo Highlights" items={photos.slice(0, 20)} size="sm" />
+          <Carousel title="Photo Highlights" items={photos.slice(0, 20)} size="sm" to="/search?type=photo" />
 
           {Object.entries(categorized)
             .filter(([cat]) => !['Uncategorized', 'Vacations'].includes(cat))
             .map(([cat, items]) => (
-              <Carousel key={cat} title={cat} items={items} />
+              <Carousel key={cat} title={cat} items={items} to={`/search?category=${encodeURIComponent(cat)}`} />
             ))}
         </div>
       </div>

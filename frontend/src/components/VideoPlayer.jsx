@@ -34,7 +34,9 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwn
   const [showQuality, setShowQuality] = useState(false);
   const [quality, setQuality] = useState('Auto');
   const [buffered, setBuffered] = useState(0);
-  const resumeRef = useRef({ time: 0, playing: false });
+  // Seeded with startAt: this handler also runs on the very first load, and
+  // would otherwise snap a resumed video back to 0:00.
+  const resumeRef = useRef({ time: startAt, playing: false });
 
   // "Auto" = the default/highest rendition the backend already picked.
   const qualityOptions = ['Auto', ...(media.renditions || []).map((r) => r.quality)];
@@ -146,13 +148,21 @@ export default function VideoPlayer({ media, startAt = 0, onTheaterChange, isOwn
   }, [startAt]);
 
   // Periodically persist watch progress
+  // (and on pause / leaving the page, so Continue Watching resumes exactly).
   useEffect(() => {
+    const v = videoRef.current;
+    const save = () => {
+      if (v && v.currentTime > 0) api.saveProgress(media.id, v.currentTime).catch(() => {});
+    };
     const interval = setInterval(() => {
-      if (videoRef.current && !videoRef.current.paused) {
-        api.saveProgress(media.id, videoRef.current.currentTime).catch(() => {});
-      }
+      if (v && !v.paused) save();
     }, 8000);
-    return () => clearInterval(interval);
+    v?.addEventListener('pause', save);
+    return () => {
+      clearInterval(interval);
+      v?.removeEventListener('pause', save);
+      save();
+    };
   }, [media.id]);
 
   // Keyboard shortcuts

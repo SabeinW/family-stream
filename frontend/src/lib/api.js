@@ -106,6 +106,8 @@ export const api = {
   categories: () => request('/media/categories'),
   favorites: () => request('/media/profile/favorites'),
   toggleFavorite: (id) => request(`/media/${id}/favorite`, { method: 'POST' }),
+  continueWatching: () => request('/media/profile/continue-watching'),
+  getProgress: (id) => request(`/media/${id}/progress`),
   saveProgress: (id, positionSec) =>
     request(`/media/${id}/progress`, { method: 'PUT', body: JSON.stringify({ positionSec }) }),
   upload: (formData) => request('/media/upload', { method: 'POST', body: formData }),

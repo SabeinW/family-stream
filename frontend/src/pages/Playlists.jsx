@@ -56,9 +56,9 @@ export default function Playlists() {
   return (
     <div className="min-h-screen bg-base-950 pb-20">
       <Navbar />
-      <div className="pt-28 px-4 md:px-10">
+      <div className="pt-24 md:pt-28 px-4 md:px-12">
         <div className="flex items-center justify-between mb-1">
-          <h1 className="font-display text-3xl tracking-wide">Playlists</h1>
+          <h1 className="font-display font-bold text-3xl tracking-tight">Playlists</h1>
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => setCreating(true)}

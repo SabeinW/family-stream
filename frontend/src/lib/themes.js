@@ -1,6 +1,8 @@
 // Each color is "R G B" (space-separated, no commas) to match Tailwind's
 // rgb(var(--x) / <alpha-value>) convention in tailwind.config.js.
 export const THEMES = [
+  // Matches the logo: brand violet, with the play-button coral as its glow.
+  { id: 'aurora', name: 'Aurora', accent: '124 92 255', dim: '91 61 245', glow: '255 77 139' },
   { id: 'indigo', name: 'Indigo', accent: '99 102 241', dim: '67 56 202', glow: '139 92 246' },
   { id: 'ocean', name: 'Ocean Blue', accent: '37 99 235', dim: '29 78 216', glow: '96 165 250' },
   { id: 'violet', name: 'Violet', accent: '139 92 246', dim: '109 40 217', glow: '196 181 253' },
@@ -11,7 +13,7 @@ export const THEMES = [
   { id: 'orange', name: 'Orange', accent: '249 115 22', dim: '194 65 12', glow: '251 146 60' },
 ];
 
-export const DEFAULT_THEME_ID = 'indigo';
+export const DEFAULT_THEME_ID = 'aurora';
 
 export function getTheme(id) {
   return THEMES.find((t) => t.id === id) || THEMES.find((t) => t.id === DEFAULT_THEME_ID);

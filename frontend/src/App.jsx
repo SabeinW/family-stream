@@ -12,6 +12,7 @@ import Settings from './pages/Settings.jsx';
 import Friends from './pages/Friends.jsx';
 import Playlists from './pages/Playlists.jsx';
 import PlaylistDetail from './pages/PlaylistDetail.jsx';
+import Splash from './components/Splash.jsx';
 
 function RequireAuth({ children }) {
   const { isAuthed } = useAuth();
@@ -47,83 +48,86 @@ function PageTransition({ children }) {
 export default function App() {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-        <Route
-          path="/profiles"
-          element={
-            <RequireAuth>
-              <PageTransition><ProfileSelect /></PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <RequireProfile>
-              <PageTransition><Dashboard /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <RequireProfile>
-              <PageTransition><Search /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/watch/:id"
-          element={
-            <RequireProfile>
-              <PageTransition><Watch /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/upload"
-          element={
-            <RequireProfile>
-              <PageTransition><Upload /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <RequireProfile>
-              <PageTransition><Settings /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/friends"
-          element={
-            <RequireProfile>
-              <PageTransition><Friends /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/playlists"
-          element={
-            <RequireProfile>
-              <PageTransition><Playlists /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/playlists/:id"
-          element={
-            <RequireProfile>
-              <PageTransition><PlaylistDetail /></PageTransition>
-            </RequireProfile>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AnimatePresence>
+    <>
+      <Splash />
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+          <Route
+            path="/profiles"
+            element={
+              <RequireAuth>
+                <PageTransition><ProfileSelect /></PageTransition>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <RequireProfile>
+                <PageTransition><Dashboard /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <RequireProfile>
+                <PageTransition><Search /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/watch/:id"
+            element={
+              <RequireProfile>
+                <PageTransition><Watch /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/upload"
+            element={
+              <RequireProfile>
+                <PageTransition><Upload /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireProfile>
+                <PageTransition><Settings /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <RequireProfile>
+                <PageTransition><Friends /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/playlists"
+            element={
+              <RequireProfile>
+                <PageTransition><Playlists /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/playlists/:id"
+            element={
+              <RequireProfile>
+                <PageTransition><PlaylistDetail /></PageTransition>
+              </RequireProfile>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </>
   );
 }

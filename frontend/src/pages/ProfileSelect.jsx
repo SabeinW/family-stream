@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Lock } from 'lucide-react';
 import { api } from '../lib/api';
+import Logo from '../components/Logo.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#1E88E5', '#00A676', '#F4A100'];
+const COLORS = ['#7C5CFF', '#FF3D8B', '#2D9CDB', '#00A676', '#F59E0B', '#EF4444'];
 
 export default function ProfileSelect() {
   const [profiles, setProfiles] = useState([]);
@@ -83,10 +84,21 @@ export default function ProfileSelect() {
   }
 
   return (
-    <div className="min-h-screen bg-base-950 flex flex-col items-center justify-center px-4">
-      <h1 className="text-3xl md:text-4xl font-semibold mb-10">Who's watching?</h1>
+    <div className="min-h-screen bg-base-950 flex flex-col items-center justify-center px-4 pt-28 pb-16 relative overflow-hidden">
+      <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgb(var(--accent-rgb)/0.14),transparent_60%)]" />
+      <div className="absolute top-0 inset-x-0 safe-top px-4 md:px-12 h-16 md:h-20 flex items-center">
+        <Logo markClassName="w-8 h-8" wordmarkClassName="text-xl" />
+      </div>
+      <motion.h1
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative font-display text-3xl md:text-5xl font-bold tracking-tight mb-10 md:mb-14"
+      >
+        Who's watching?
+      </motion.h1>
 
-      <div className="flex flex-wrap gap-6 justify-center max-w-2xl">
+      <div className="relative flex flex-wrap gap-5 md:gap-8 justify-center max-w-3xl">
         {profiles.map((p, i) => (
           <motion.button
             key={p.id}
@@ -98,7 +110,7 @@ export default function ProfileSelect() {
             className="flex flex-col items-center gap-3 group"
           >
             <div
-              className="w-28 h-28 md:w-32 md:h-32 rounded-xl flex items-center justify-center text-4xl font-bold relative ring-2 ring-transparent group-hover:ring-white transition-all overflow-hidden"
+              className="w-28 h-28 md:w-36 md:h-36 rounded-2xl flex items-center justify-center text-5xl font-display font-bold relative ring-[3px] ring-transparent group-hover:ring-white group-focus-visible:ring-white shadow-card transition-all duration-300 overflow-hidden"
               style={{ backgroundColor: p.avatarColor }}
             >
               {p.avatarPath ? (
@@ -106,9 +118,11 @@ export default function ProfileSelect() {
               ) : (
                 p.name[0].toUpperCase()
               )}
+              {/* Soft top-left sheen so flat color avatars feel lit, not painted */}
+              <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/25" />
               {p.hasPin && <Lock className="w-5 h-5 absolute bottom-2 right-2 opacity-80" />}
             </div>
-            <span className="text-white/70 group-hover:text-white transition-colors">{p.name}</span>
+            <span className="text-white/60 group-hover:text-white transition-colors text-sm md:text-base font-medium">{p.name}</span>
           </motion.button>
         ))}
 
@@ -120,10 +134,10 @@ export default function ProfileSelect() {
           onClick={() => setCreating(true)}
           className="flex flex-col items-center gap-3 group"
         >
-          <div className="w-28 h-28 md:w-32 md:h-32 rounded-xl flex items-center justify-center bg-base-800 ring-2 ring-transparent group-hover:ring-white/40 transition-all">
+          <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl flex items-center justify-center bg-white/[0.04] ring-1 ring-white/15 border border-dashed border-white/10 group-hover:bg-white/[0.08] group-hover:ring-white/40 transition-all duration-300">
             <Plus className="w-10 h-10 text-white/50" />
           </div>
-          <span className="text-white/50 group-hover:text-white transition-colors">Add Profile</span>
+          <span className="text-white/50 group-hover:text-white transition-colors text-sm md:text-base font-medium">Add Profile</span>
         </motion.button>
       </div>
 
@@ -133,7 +147,7 @@ export default function ProfileSelect() {
           animate={{ opacity: 1 }}
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
         >
-          <div className="bg-base-900 rounded-xl p-6 w-full max-w-sm ring-1 ring-white/10">
+          <div className="glass rounded-2xl p-6 w-full max-w-sm ring-1 ring-white/10 shadow-card">
             <h3 className="font-semibold mb-4">New profile name</h3>
             <input
               autoFocus
